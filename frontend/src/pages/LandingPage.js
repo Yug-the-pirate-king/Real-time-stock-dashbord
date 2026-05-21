@@ -109,10 +109,36 @@ export default function LandingPage({ onStart }) {
       </nav>
 
       {/* HERO JUMBOTRON PANEL VIEW */}
-      <section className="sp-hero">
+      {/* Added position: relative and overflow: hidden to contain the absolute 3D background */}
+      <section className="sp-hero" style={{ position: "relative", overflow: "hidden" }}>
+        
         <div className="sp-hero-bg"/>
-        <div className="sp-hero-grid" />
-        <div className="sp-hero-content">
+        
+        {/* 3D BACKGROUND WRAPPER - Absolutely positioned to fill the hero */}
+        <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0 }}>
+          <Antigravity
+            count={1200}
+            magnetRadius={12}
+            ringRadius={7}
+            waveSpeed={0.4}
+            waveAmplitude={1}
+            particleSize={1.5}
+            lerpSpeed={0.05}
+            color="#1a4a2e"
+            autoAnimate
+            particleVariance={1}
+            rotationSpeed={0}
+            depthFactor={1}
+            pulseSpeed={3}
+            particleShape="capsule"
+            fieldStrength={10}
+          />
+        </div>
+
+        <div className="sp-hero-grid" style={{ zIndex: 1, position: "relative", pointerEvents: "none" }} />
+        
+        {/* Added position relative and higher zIndex so text & buttons stay clickable on top */}
+        <div className="sp-hero-content" style={{ position: "relative", zIndex: 10 }}>
           <div className="sp-hero-badge">
             <span className="sp-badge-pulse" />
             Live market intelligence
@@ -129,28 +155,6 @@ export default function LandingPage({ onStart }) {
             <button onClick={onStart} className="sp-btn-primary">Get early access →</button>
             <button className="sp-btn-ghost" onClick={() => scrollToSection("features")}>Explore features ↓</button>
           </div>
-          
-          {/* 2. ADDED ANTIGRAVITY COMPONENT HERE */}
-          <div style={{ width: '100%', height: '400px', position: 'relative', margin: '40px 0', zIndex: 1 }}>
-            <Antigravity
-              count={600}
-              magnetRadius={6}
-              ringRadius={7}
-              waveSpeed={0.4}
-              waveAmplitude={1}
-              particleSize={1.5}
-              lerpSpeed={0.05}
-              color="#1a4a2e"
-              autoAnimate
-              particleVariance={1}
-              rotationSpeed={0}
-              depthFactor={1}
-              pulseSpeed={3}
-              particleShape="capsule"
-              fieldStrength={10}
-            />
-          </div>
-          {/* END ANTIGRAVITY COMPONENT */}
 
           <div className="sp-hero-stats">
             <div>
