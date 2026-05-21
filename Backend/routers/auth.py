@@ -1,40 +1,49 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+
 from database import SessionLocal
-from models.auth import User
+from models.auth import User 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# Database connection helper
 def get_db():
     db = SessionLocal()
-    try: 
+    try:
         yield db
-    finally: 
+    finally:
         db.close()
 
-# 1. THE LOGIN ROUTE
-@router.post("/login")  
-def login_user(username: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == username).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found.")
-    return user
+# Minimalistic Payload: Only requires the username string
+class UserAuthPayload(BaseModel):
+    username: str
 
-# 2. THE MISSING REGISTRATION ROUTE (Add this!)
-@router.post("/create-user/{username}")
-def create_user(username: str, db: Session = Depends(get_db)):
-    # Check if the username is already taken by someone else
-    existing_user = db.query(User).filter(User.username == username).first()
+@router.post("/create-user")
+def create_user(payload: UserAuthPayload, db: Session = Depends(get_db)):
+    username_cleaned = payload.username.strip()
+    if not username_cleaned:
+        raise HTTPException(status_code=400, detail="Username cannot be empty.")
+
+    # Check if username already exists
+    existing_user = db.query(User).filter(User.username == username_cleaned).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already taken.")
     
-    # Create the new user with a starting virtual balance of $100,000
-    new_user = User(username=username, balance=100000.0)
-    
-    # Save the new user into your simulator.db file
+    # Create user with default balance defined in your model
+    new_user = User(username=username_cleaned)
     db.add(new_user)
     db.commit()
-    db.refresh(new_user)  # Gives the new_user its unique ID from the database
+    db.refresh(new_user)
     
-    return {"message": "Account created successfully!", "user": new_user}
+    return {"id": new_user.id, "username": new_user.username, "balance": new_user.balance}
+
+@router.post("/login")
+def login(payload: UserAuthPayload, db: Session = Depends(get_db)):
+    username_cleaned = payload.username.strip()
+    
+    # Find the user by username only
+    user = db.query(User).filter(User.username == username_cleaned).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found. Please register.")
+        
+    return {"id": user.id, "username": user.username, "balance": user.balance}

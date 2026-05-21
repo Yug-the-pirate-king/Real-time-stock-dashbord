@@ -1,0 +1,331 @@
+import React, { useState, useEffect } from "react";
+import "../styles/landing.css"; // Links to your separated styles layout perfectly
+
+export default function LandingPage({ onStart }) {
+  const [scrolled, setScrolled] = useState(false);
+
+  // Dynamic state hooks for live value changes
+  const [tickers, setTickers] = useState([
+    { sym: "AAPL", price: 213.42, change: 1.24, up: true },
+    { sym: "TSLA", price: 176.88, change: -0.87, up: false },
+    { sym: "NVDA", price: 891.30, change: 3.15, up: true },
+    { sym: "MSFT", price: 418.50, change: 0.52, up: true },
+    { sym: "AMZN", price: 184.20, change: -0.33, up: false },
+    { sym: "GOOG", price: 167.45, change: 0.78, up: true },
+    { sym: "META", price: 523.10, change: 1.90, up: true },
+    { sym: "NFLX", price: 645.00, change: -1.02, up: false },
+  ]);
+
+  const [mockChartBars, setMockChartBars] = useState([35, 50, 42, 65, 58, 80, 72, 90, 95]);
+
+  // Handle Navbar Box-Shadow toggle on Scroll events
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // MINIMALISTIC COOL: Dynamic Price Ticker Fluctuations Engine
+  useEffect(() => {
+    const marketInterval = setInterval(() => {
+      // 1. Gently mutate random stock metrics to make it look alive
+      setTickers((prevTickers) =>
+        prevTickers.map((t) => {
+          const changePercent = (Math.random() * 0.4 - 0.2); // Fluctuate between -0.2% and +0.2%
+          const newPrice = t.price * (1 + changePercent / 100);
+          const newDelta = t.change + changePercent;
+          return {
+            ...t,
+            price: parseFloat(newPrice.toFixed(2)),
+            change: parseFloat(newDelta.toFixed(2)),
+            up: newDelta >= 0,
+          };
+        })
+      );
+
+      // 2. Wave chart vectors slowly inside the layout card preview block
+      setMockChartBars((prevBars) => {
+        const next = [...prevBars];
+        next.shift(); // Remove oldest data bar
+        const variance = Math.floor(Math.random() * 20 - 10);
+        const lastValue = prevBars[prevBars.length - 1];
+        const newBarHeight = Math.max(20, Math.min(100, lastValue + variance));
+        next.push(newBarHeight); // Push new simulated timeline data point
+        return next;
+      });
+    }, 2500);
+
+    return () => clearInterval(marketInterval);
+  }, []);
+
+  const scrollToSection = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Safe layout extraction selectors
+  const previewApple = tickers.find((t) => t.sym === "AAPL") || tickers[0];
+
+  return (
+    <div style={{ backgroundColor: "var(--white)", minHeight: "100vh" }}>
+      
+      {/* HEADER NAV SYSTEM */}
+      <nav className="sp-nav" style={{ boxShadow: scrolled ? "0 1px 20px rgba(0,0,0,0.06)" : "none" }}>
+        <a href="#" className="sp-nav-logo" onClick={(e) => e.preventDefault()}>
+          <span className="sp-logo-dot" />
+          StockPulse
+        </a>
+        <ul className="sp-nav-links">
+          <li><a href="#features" onClick={e => { e.preventDefault(); scrollToSection("features"); }}>Features</a></li>
+          <li><a href="#how" onClick={e => { e.preventDefault(); scrollToSection("how"); }}>How it works</a></li>
+          <li><a href="#contact" onClick={e => { e.preventDefault(); scrollToSection("contact"); }}>Contact</a></li>
+        </ul>
+        <button className="sp-btn-login" onClick={onStart}>Log in →</button>
+      </nav>
+
+      {/* HERO JUMBOTRON PANEL VIEW */}
+      <section className="sp-hero">
+        <div className="sp-hero-bg" />
+        <div className="sp-hero-grid" />
+        <div className="sp-hero-content">
+          <div className="sp-hero-badge">
+            <span className="sp-badge-pulse" />
+            Live market intelligence
+          </div>
+          <h1 className="sp-h1">
+            Markets move fast.<br />
+            <em>Stay ahead</em> of them.
+          </h1>
+          <p className="sp-hero-sub">
+            StockPulse combines real-time stock data, AI-powered price predictions,
+            and curated financial news in one clean, powerful dashboard.
+          </p>
+          <div className="sp-hero-cta">
+            <button onClick={onStart} className="sp-btn-primary">Get early access →</button>
+            <button className="sp-btn-ghost" onClick={() => scrollToSection("features")}>Explore features ↓</button>
+          </div>
+          
+          <div className="sp-hero-stats">
+            <div>
+              <div className="sp-stat-num">5,000+</div>
+              <div className="sp-stat-label">Stocks tracked</div>
+            </div>
+            <div>
+              <div className="sp-stat-num">94%</div>
+              <div className="sp-stat-label">Prediction accuracy</div>
+            </div>
+            <div>
+              <div className="sp-stat-num">Real-time</div>
+              <div className="sp-stat-label">News feed</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* INFINITE TAPE ROW */}
+      <div className="sp-ticker-wrap">
+        <div className="sp-ticker-inner">
+          {[...tickers, ...tickers].map((t, i) => (
+            <span className="sp-tick-item" key={i}>
+              <span className="sp-tick-sym">{t.sym}</span>
+              ${t.price.toFixed(2)}
+              <span className={t.up ? "sp-tick-up" : "sp-tick-dn"}>
+                {t.up ? "▲" : "▼"} {Math.abs(t.change).toFixed(2)}%
+              </span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* CORE SPECIFICATIONS SECTION */}
+      <section className="sp-section" id="features">
+        <div className="sp-section-label">What's inside</div>
+        <div className="sp-section-title">Everything you need to trade smarter.</div>
+        <div className="sp-features-grid">
+          <div className="sp-feature-card">
+            <div className="sp-feature-icon sp-icon-green">📊</div>
+            <div className="sp-feature-title">Live Stock Desk</div>
+            <p className="sp-feature-desc">
+              A full market overview at your fingertips. Track prices, volume, movers,
+              and sector performance in real time — all in one clean interface.
+            </p>
+            <span className="sp-feature-tag">Real-time data</span>
+          </div>
+          <div className="sp-feature-card">
+            <div className="sp-feature-icon sp-icon-amber">🤖</div>
+            <div className="sp-feature-title">AI Price Predictor</div>
+            <p className="sp-feature-desc">
+              Our ML model analyses historical patterns, earnings data, and sentiment
+              signals to forecast short-term price movements with confidence scores.
+            </p>
+            <span className="sp-feature-tag" style={{ background: "var(--amber-bg)", color: "var(--amber)" }}>AI-powered</span>
+          </div>
+          <div className="sp-feature-card">
+            <div className="sp-feature-icon sp-icon-blue">📰</div>
+            <div className="sp-feature-title">Curated News Panel</div>
+            <p className="sp-feature-desc">
+              A dedicated news feed filtered to what matters. Market-moving headlines,
+              earnings calls, analyst upgrades — surfaced instantly, without the noise.
+            </p>
+            <span className="sp-feature-tag" style={{ background: "var(--blue-bg)", color: "var(--blue)" }}>Live feed</span>
+          </div>
+        </div>
+      </section>
+
+      {/* HUD DASHBOARD CARD PREVIEW WRAP */}
+      <section className="sp-section">
+        <div className="sp-preview-wrap">
+          <div className="sp-preview-text">
+            <div className="sp-section-label">Inside the platform</div>
+            <div className="sp-section-title" style={{ marginBottom: 20 }}>Your entire market view, one screen.</div>
+            <p>
+              From live charts to AI-generated forecasts and breaking news —
+              StockPulse puts everything on a single dashboard so you can
+              make faster, smarter decisions without switching tabs.
+            </p>
+            <button onClick={onStart} className="sp-btn-primary" style={{ width: "fit-content" }}>Get early access →</button>
+          </div>
+          
+          <div className="sp-mockup">
+            <div className="sp-mockup-bar">
+              <div className="sp-dot" style={{ background: "#ff5f57" }} />
+              <div className="sp-dot" style={{ background: "#febc2e" }} />
+              <div className="sp-dot" style={{ background: "#28c840" }} />
+            </div>
+            <div className="sp-mockup-body">
+              <div className="sp-mock-row">
+                <div className="sp-mock-card">
+                  <div className="sp-mock-label">{previewApple.sym}</div>
+                  <div className="sp-mock-val" style={{ color: previewApple.up ? "#4ade80" : "#f87171" }}>
+                    ${previewApple.price.toFixed(2)}
+                  </div>
+                  <div className="sp-mock-change" style={{ color: previewApple.up ? "#4ade80" : "#f87171" }}>
+                    {previewApple.up ? "▲" : "▼"} {Math.abs(previewApple.change).toFixed(2)}% today
+                  </div>
+                </div>
+                <div className="sp-mock-card">
+                  <div className="sp-mock-label">AI Forecast</div>
+                  <div className="sp-mock-val">$221.00</div>
+                  <div className="sp-mock-change" style={{ color: "rgba(255,255,255,0.35)" }}>7-day target · 87% conf.</div>
+                </div>
+              </div>
+              
+              <div className="sp-mock-chart">
+                {mockChartBars.map((h, i) => (
+                  <div key={i} className="sp-bar" style={{
+                    height: `${h}%`,
+                    background: i === mockChartBars.length - 1 ? "rgba(45,107,69,1)" : "rgba(45,107,69,0.5)"
+                  }} />
+                ))}
+              </div>
+              
+              <div className="sp-mock-news">
+                {[
+                  "Fed holds rates steady — markets rally on guidance",
+                  "NVDA beats earnings, raises full-year guidance",
+                  "Apple reportedly set to launch new AI chip in Q3",
+                ].map((n, i) => (
+                  <div key={i} className="sp-news-item">
+                    <span className="sp-news-dot" />{n}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* OPERATIONS WORKFLOW METRIC STEPS */}
+      <section className="sp-section sp-how-wrap" id="how">
+        <div style={{ textAlign: "center" }}>
+          <div className="sp-section-label">Process</div>
+          <div className="sp-section-title" style={{ margin: "0 auto 60px", textAlign: "center" }}>
+            Three steps to smarter investing.
+          </div>
+        </div>
+        <div className="sp-steps-grid">
+          {[
+            { n: "1", title: "Create your account", desc: "Sign up in seconds. No credit card needed for early access." },
+            { n: "2", title: "Build your watchlist", desc: "Add stocks you care about. The dashboard personalises instantly." },
+            { n: "3", title: "Let the AI work", desc: "Get predictions, alerts, and curated news tailored to your portfolio." },
+          ].map((s) => (
+            <div className="sp-step" key={s.n}>
+              <div className="sp-step-num">{s.n}</div>
+              <div className="sp-step-title">{s.title}</div>
+              <p className="sp-step-desc">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CONTACT INFORMATION CARDS */}
+      <section className="sp-section" id="contact">
+        <div className="sp-contact-grid">
+          <div className="sp-contact-info">
+            <div className="sp-section-label">Get in touch</div>
+            <div className="sp-section-title" style={{ marginBottom: 16 }}>
+              Questions? We'd love to hear from you.
+            </div>
+            <p>
+              Whether you're a developer, investor, or just curious — reach out.
+              We're actively onboarding early users and welcome all feedback.
+            </p>
+            <div className="sp-contact-detail">
+              <div className="sp-contact-detail-icon">👤</div>
+              Shah Yug Vipulbhai
+            </div>
+            <div className="sp-contact-detail">
+              <div className="sp-contact-detail-icon">📞</div>
+              +91 91371 43315
+            </div>
+            <div className="sp-contact-detail">
+              <div className="sp-contact-detail-icon">✉️</div>
+              yugshah197@gmail.com
+            </div>
+          </div>
+
+          <div>
+            <div className="sp-section-label" style={{ marginBottom: 8 }}>Reach out directly</div>
+            <p style={{ fontSize: 15, color: "var(--gray-500)", lineHeight: 1.8, marginTop: 8 }}>
+              Have a question, partnership idea, or just want to say hi? Drop us a message
+              using any of the contact details — we typically respond within 24 hours.
+            </p>
+            <div style={{
+              marginTop: 32, padding: "28px 32px",
+              background: "var(--gray-50)", borderRadius: 12,
+              border: "1px solid var(--gray-100)"
+            }}>
+              <div style={{ fontSize: 13, color: "var(--gray-500)", marginBottom: 4 }}>Primary contact</div>
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "var(--black)", marginBottom: 16 }}>
+                Shah Yug Vipulbhai
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <a href="tel:+919137143315" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "var(--gray-700)", textDecoration: "none" }}>
+                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifycontent: "center", paddingLeft: "8px" }}>📞</span>
+                  +91 91371 43315
+                </a>
+                <a href="mailto:yugshah197@gmail.com" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "var(--accent-light)", textDecoration: "none" }}>
+                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifycontent: "center", paddingLeft: "8px" }}>✉️</span>
+                  yugshah197@gmail.com
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER BAR TERMINAL ACCENTS */}
+      <footer className="sp-footer">
+        <div className="sp-footer-logo">
+          <span className="sp-logo-dot" />StockPulse
+        </div>
+        <ul className="sp-footer-links">
+          <li><a href="#features" onClick={e => { e.preventDefault(); scrollToSection("features"); }}>Features</a></li>
+          <li><a href="#how" onClick={e => { e.preventDefault(); scrollToSection("how"); }}>How it works</a></li>
+          <li><a href="#contact" onClick={e => { e.preventDefault(); scrollToSection("contact"); }}>Contact</a></li>
+        </ul>
+        <div className="sp-footer-copy">© 2026 StockPulse. All rights reserved.</div>
+      </footer>
+
+    </div>
+  );
+}
