@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import "../styles/landing.css"; // Links to your separated styles layout perfectly
+import "../styles/landing.css";
+import Antigravity from '../components/Antigravity';
 
 export default function LandingPage({ onStart }) {
   const [scrolled, setScrolled] = useState(false);
@@ -25,25 +26,46 @@ export default function LandingPage({ onStart }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // MINIMALISTIC COOL: Dynamic Price Ticker Fluctuations Engine
   useEffect(() => {
-    const marketInterval = setInterval(() => {
-      // 1. Gently mutate random stock metrics to make it look alive
-      setTickers((prevTickers) =>
-        prevTickers.map((t) => {
-          const changePercent = (Math.random() * 0.4 - 0.2); // Fluctuate between -0.2% and +0.2%
-          const newPrice = t.price * (1 + changePercent / 100);
-          const newDelta = t.change + changePercent;
-          return {
-            ...t,
-            price: parseFloat(newPrice.toFixed(2)),
-            change: parseFloat(newDelta.toFixed(2)),
-            up: newDelta >= 0,
-          };
-        })
-      );
+    const socket = new WebSocket('wss://ws.finnhub.io?token=d87i41pr01qmhakft8ugd87i41pr01qmhakft8v0');
 
-      // 2. Wave chart vectors slowly inside the layout card preview block
+    // Subscribe to the tickers we want to track
+    socket.addEventListener('open', function (event) {
+      const symbolsToTrack = ["AAPL", "TSLA", "NVDA", "MSFT", "AMZN", "GOOG", "META", "NFLX"];
+      symbolsToTrack.forEach(sym => {
+        socket.send(JSON.stringify({ 'type': 'subscribe', 'symbol': sym }));
+      });
+    });
+
+    // Listen for live trades and update state
+    socket.addEventListener('message', function (event) {
+      const response = JSON.parse(event.data);
+      if (response.type === 'trade') {
+        const trades = response.data;
+        trades.forEach(trade => {
+          const tradeSymbol = trade.s;
+          const tradePrice = trade.p;
+
+          setTickers(prevTickers => prevTickers.map(t => {
+            if (t.sym === tradeSymbol) {
+              const priceDifference = tradePrice - t.price;
+              if (priceDifference !== 0) {
+                return {
+                  ...t,
+                  price: parseFloat(tradePrice.toFixed(2)),
+                  change: parseFloat(priceDifference.toFixed(2)),
+                  up: priceDifference >= 0
+                };
+              }
+            }
+            return t;
+          }));
+        });
+      }
+    });
+
+    // Keep waving the chart vectors slowly inside the layout card preview block
+    const chartInterval = setInterval(() => {
       setMockChartBars((prevBars) => {
         const next = [...prevBars];
         next.shift(); // Remove oldest data bar
@@ -55,7 +77,11 @@ export default function LandingPage({ onStart }) {
       });
     }, 2500);
 
-    return () => clearInterval(marketInterval);
+    // Cleanup on unmount
+    return () => {
+      socket.close();
+      clearInterval(chartInterval);
+    };
   }, []);
 
   const scrollToSection = (id) => {
@@ -84,7 +110,7 @@ export default function LandingPage({ onStart }) {
 
       {/* HERO JUMBOTRON PANEL VIEW */}
       <section className="sp-hero">
-        <div className="sp-hero-bg" />
+        <div className="sp-hero-bg"/>
         <div className="sp-hero-grid" />
         <div className="sp-hero-content">
           <div className="sp-hero-badge">
@@ -104,6 +130,28 @@ export default function LandingPage({ onStart }) {
             <button className="sp-btn-ghost" onClick={() => scrollToSection("features")}>Explore features ↓</button>
           </div>
           
+          {/* 2. ADDED ANTIGRAVITY COMPONENT HERE */}
+          <div style={{ width: '100%', height: '400px', position: 'relative', margin: '40px 0', zIndex: 1 }}>
+            <Antigravity
+              count={600}
+              magnetRadius={6}
+              ringRadius={7}
+              waveSpeed={0.4}
+              waveAmplitude={1}
+              particleSize={1.5}
+              lerpSpeed={0.05}
+              color="#1a4a2e"
+              autoAnimate
+              particleVariance={1}
+              rotationSpeed={0}
+              depthFactor={1}
+              pulseSpeed={3}
+              particleShape="capsule"
+              fieldStrength={10}
+            />
+          </div>
+          {/* END ANTIGRAVITY COMPONENT */}
+
           <div className="sp-hero-stats">
             <div>
               <div className="sp-stat-num">5,000+</div>
@@ -300,11 +348,11 @@ export default function LandingPage({ onStart }) {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <a href="tel:+919137143315" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "var(--gray-700)", textDecoration: "none" }}>
-                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifycontent: "center", paddingLeft: "8px" }}>📞</span>
+                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>📞</span>
                   +91 91371 43315
                 </a>
                 <a href="mailto:yugshah197@gmail.com" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "var(--accent-light)", textDecoration: "none" }}>
-                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifycontent: "center", paddingLeft: "8px" }}>✉️</span>
+                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>✉️</span>
                   yugshah197@gmail.com
                 </a>
               </div>
