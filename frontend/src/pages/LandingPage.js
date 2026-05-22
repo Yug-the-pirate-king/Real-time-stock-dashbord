@@ -2,6 +2,11 @@ import React, { useState, useEffect } from "react";
 import "../styles/landing.css";
 import Antigravity from '../components/Antigravity';
 import { AiOutlineStock } from "react-icons/ai";
+import { FaBrain } from "react-icons/fa";
+import { FaRegNewspaper } from "react-icons/fa";
+import { IoIosPersonAdd } from "react-icons/io";
+import { IoIosCall } from "react-icons/io";
+import { MdOutlineMarkEmailUnread } from "react-icons/md";
 
 export default function LandingPage({ onStart }) {
   const [scrolled, setScrolled] = useState(false);
@@ -195,7 +200,7 @@ export default function LandingPage({ onStart }) {
         <div className="sp-section-title">Everything you need to trade smarter.</div>
         <div className="sp-features-grid">
           <div className="sp-feature-card">
-            <div className="sp-feature-icon sp-icon-green">📊</div>
+            <div className="sp-feature-icon sp-icon-green"><AiOutlineStock /></div>
             <div className="sp-feature-title">Live Stock Desk</div>
             <p className="sp-feature-desc">
               A full market overview at your fingertips. Track prices, volume, movers,
@@ -204,7 +209,7 @@ export default function LandingPage({ onStart }) {
             <span className="sp-feature-tag">Real-time data</span>
           </div>
           <div className="sp-feature-card">
-            <div className="sp-feature-icon sp-icon-amber"><AiOutlineStock /></div>
+            <div className="sp-feature-icon sp-icon-amber"><FaBrain /></div>
             <div className="sp-feature-title">AI Price Predictor</div>
             <p className="sp-feature-desc">
               Our ML model analyses historical patterns, earnings data, and sentiment
@@ -213,7 +218,7 @@ export default function LandingPage({ onStart }) {
             <span className="sp-feature-tag" style={{ background: "var(--amber-bg)", color: "var(--amber)" }}>AI-powered</span>
           </div>
           <div className="sp-feature-card">
-            <div className="sp-feature-icon sp-icon-blue">📰</div>
+            <div className="sp-feature-icon sp-icon-blue"><FaRegNewspaper /></div>
             <div className="sp-feature-title">Curated News Panel</div>
             <p className="sp-feature-desc">
               A dedicated news feed filtered to what matters. Market-moving headlines,
@@ -312,7 +317,6 @@ export default function LandingPage({ onStart }) {
 
       {/* CONTACT INFORMATION CARDS */}
       <section className="sp-section" id="contact">
-        <div className="sp-contact-grid">
           <div className="sp-contact-info">
             <div className="sp-section-label">Get in touch</div>
             <div className="sp-section-title" style={{ marginBottom: 16 }}>
@@ -323,47 +327,18 @@ export default function LandingPage({ onStart }) {
               We're actively onboarding early users and welcome all feedback.
             </p>
             <div className="sp-contact-detail">
-              <div className="sp-contact-detail-icon">👤</div>
+              <div className="sp-contact-detail-icon"><IoIosPersonAdd /></div>
               Shah Yug Vipulbhai
             </div>
             <div className="sp-contact-detail">
-              <div className="sp-contact-detail-icon">📞</div>
+              <div className="sp-contact-detail-icon"><IoIosCall /></div>
               +91 91371 43315
             </div>
             <div className="sp-contact-detail">
-              <div className="sp-contact-detail-icon">✉️</div>
+              <div className="sp-contact-detail-icon"><MdOutlineMarkEmailUnread /></div>
               yugshah197@gmail.com
             </div>
           </div>
-
-          <div>
-            <div className="sp-section-label" style={{ marginBottom: 8 }}>Reach out directly</div>
-            <p style={{ fontSize: 15, color: "var(--gray-500)", lineHeight: 1.8, marginTop: 8 }}>
-              Have a question, partnership idea, or just want to say hi? Drop us a message
-              using any of the contact details — we typically respond within 24 hours.
-            </p>
-            <div style={{
-              marginTop: 32, padding: "28px 32px",
-              background: "var(--gray-50)", borderRadius: 12,
-              border: "1px solid var(--gray-100)"
-            }}>
-              <div style={{ fontSize: 13, color: "var(--gray-500)", marginBottom: 4 }}>Primary contact</div>
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "var(--black)", marginBottom: 16 }}>
-                Shah Yug Vipulbhai
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <a href="tel:+919137143315" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "var(--gray-700)", textDecoration: "none" }}>
-                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>📞</span>
-                  +91 91371 43315
-                </a>
-                <a href="mailto:yugshah197@gmail.com" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "var(--accent-light)", textDecoration: "none" }}>
-                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "var(--accent-subtle)", display: "flex", alignItems: "center", justifyContent: "center" }}>✉️</span>
-                  yugshah197@gmail.com
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* FOOTER BAR TERMINAL ACCENTS */}

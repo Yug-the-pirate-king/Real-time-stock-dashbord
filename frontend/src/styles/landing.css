@@ -192,7 +192,7 @@ body {
 .sp-section-title {
   font-family: 'DM Serif Display', serif;
   font-size: clamp(32px, 4vw, 46px); line-height: 1.15;
-  letter-spacing: -0.01em; max-width: 560px; margin-bottom: 60px;
+  letter-spacing: -0.01em;  margin-bottom: 60px;
 }
 
 .sp-features-grid {
