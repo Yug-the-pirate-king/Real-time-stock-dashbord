@@ -3,37 +3,34 @@ import React, { useState } from 'react';
 export default function Login({ onLoginSuccess }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');           // ← NEW
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
 
-    // Clear whitespace using JavaScript's native .trim() method
     const cleanedUsername = username.trim();
+    const cleanedPassword = password.trim();              // ← NEW
 
-    if (!cleanedUsername) {
-      setErrorMessage('Please enter a username.');
+    if (!cleanedUsername || !cleanedPassword) {           // ← UPDATED
+      setErrorMessage('Please enter a username and password.');
       return;
     }
 
     const endpoint = isRegistering ? 'create-user' : 'login';
-    
+
     try {
       const response = await fetch(`http://127.0.0.1:8000/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: cleanedUsername })
+        body: JSON.stringify({ username: cleanedUsername, password: cleanedPassword }) // ← UPDATED
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        onLoginSuccess({
-          id: data.id,
-          username: data.username,
-          balance: data.balance
-        });
+        onLoginSuccess({ id: data.id, username: data.username, balance: data.balance });
       } else {
         setErrorMessage(data.detail || 'Authentication failed.');
       }
@@ -47,24 +44,31 @@ export default function Login({ onLoginSuccess }) {
       <div style={styles.card}>
         <h2 style={styles.title}>{isRegistering ? 'Register Operator' : 'StockPulse Terminal'}</h2>
         <p style={styles.subtitle}>Initialize sandbox session via identity label.</p>
-        
+
         <form onSubmit={handleSubmit} style={styles.form}>
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Enter Username"
-            value={username} 
-            onChange={(e) => setUsername(e.target.value)} 
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            style={styles.input}
+          />
+          <input                                           // ← NEW BLOCK
+            type="password"
+            placeholder="Enter Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             style={styles.input}
           />
           <button type="submit" style={styles.submitBtn}>
             {isRegistering ? 'Initialize Identity →' : 'Connect Session →'}
           </button>
         </form>
-        
+
         {errorMessage && <div style={styles.errorBox}>{errorMessage}</div>}
-        
-        <button 
-          onClick={() => { setIsRegistering(!isRegistering); setErrorMessage(''); }} 
+
+        <button
+          onClick={() => { setIsRegistering(!isRegistering); setErrorMessage(''); setPassword(''); }} // ← password reset added
           style={styles.toggleBtn}
         >
           {isRegistering ? 'Return to secure log in' : 'New operator? Register terminal access'}
