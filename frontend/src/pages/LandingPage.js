@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import "../styles/landing.css";
 import Antigravity from '../components/Antigravity';
+import { AiOutlineStock } from "react-icons/ai";
 
 export default function LandingPage({ onStart }) {
   const [scrolled, setScrolled] = useState(false);
 
   // Dynamic state hooks for live value changes
   const [tickers, setTickers] = useState([
+    { sym: "BINANCE:BTCUSDT", price: 65000, change: 0, up: true },
     { sym: "AAPL", price: 213.42, change: 1.24, up: true },
     { sym: "TSLA", price: 176.88, change: -0.87, up: false },
     { sym: "NVDA", price: 891.30, change: 3.15, up: true },
@@ -17,9 +19,8 @@ export default function LandingPage({ onStart }) {
     { sym: "NFLX", price: 645.00, change: -1.02, up: false },
   ]);
 
-  const [mockChartBars, setMockChartBars] = useState([35, 50, 42, 65, 58, 80, 72, 90, 95]);
+  const [mockChartBars, setMockChartBars] = useState([55,35, 50, 42, 65, 58, 80, 72, 90, 95]);
 
-  // Handle Navbar Box-Shadow toggle on Scroll events
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll);
@@ -27,11 +28,11 @@ export default function LandingPage({ onStart }) {
   }, []);
 
   useEffect(() => {
-    const socket = new WebSocket('wss://ws.finnhub.io?token=d87i41pr01qmhakft8ugd87i41pr01qmhakft8v0');
+    const socket = new WebSocket('wss://ws.finnhub.io?token=d87v551r01qmhakhgmd0d87v551r01qmhakhgmdg');
 
     // Subscribe to the tickers we want to track
     socket.addEventListener('open', function (event) {
-      const symbolsToTrack = ["AAPL", "TSLA", "NVDA", "MSFT", "AMZN", "GOOG", "META", "NFLX"];
+      const symbolsToTrack = ["BINANCE:BTCUSDT", "AAPL", "TSLA", "NVDA", "MSFT", "AMZN", "GOOG", "META", "NFLX"];
       symbolsToTrack.forEach(sym => {
         socket.send(JSON.stringify({ 'type': 'subscribe', 'symbol': sym }));
       });
@@ -203,7 +204,7 @@ export default function LandingPage({ onStart }) {
             <span className="sp-feature-tag">Real-time data</span>
           </div>
           <div className="sp-feature-card">
-            <div className="sp-feature-icon sp-icon-amber">🤖</div>
+            <div className="sp-feature-icon sp-icon-amber"><AiOutlineStock /></div>
             <div className="sp-feature-title">AI Price Predictor</div>
             <p className="sp-feature-desc">
               Our ML model analyses historical patterns, earnings data, and sentiment
