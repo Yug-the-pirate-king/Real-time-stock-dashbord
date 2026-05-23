@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import yfinance as yf
+import requests
 
 # Import the shared database connector and your structural model blueprints
 from database import SessionLocal
@@ -125,3 +126,118 @@ def get_user_portfolio(user_id: int, db: Session = Depends(get_db)):
 @router.get("/history/{user_id}")
 def get_user_history(user_id: int, db: Session = Depends(get_db)):
     return db.query(TransactionHistory).filter(TransactionHistory.user_id == user_id).order_by(TransactionHistory.timestamp.desc()).all()
+
+# ==========================================
+# 4. MARKET DATA & GLOBAL SEARCH
+# ==========================================
+
+# Default stocks to show when the user first opens the Market tab
+WATCHLIST = {
+    "AAPL": {"name": "Apple Inc.", "icon": "🍎", "category": "Technology"},
+    "MSFT": {"name": "Microsoft Corp", "icon": "🪟", "category": "Technology"},
+    "TSLA": {"name": "Tesla Inc.", "icon": "🚗", "category": "Automotive"},
+    "NVDA": {"name": "Nvidia Corp", "icon": "💻", "category": "Semiconductors"},
+    "SPY":  {"name": "S&P 500 ETF", "icon": "📈", "category": "Index"}
+}
+
+@router.get("/market")
+def get_real_market_data():
+    """Returns live prices for the default watchlist."""
+    market_data = []
+    tickers_string = " ".join(WATCHLIST.keys())
+    yf_tickers = yf.Tickers(tickers_string)
+    
+    for ticker_symbol, ui_data in WATCHLIST.items():
+        try:
+            ticker_obj = yf_tickers.tickers[ticker_symbol]
+            fast_info = ticker_obj.fast_info
+            
+            current_price = fast_info.last_price
+            prev_close = fast_info.previous_close
+            
+            if prev_close and prev_close > 0:
+                change_percent = ((current_price - prev_close) / prev_close) * 100
+                change_str = f"+{change_percent:.2f}%" if change_percent >= 0 else f"{change_percent:.2f}%"
+            else:
+                change_str = "0.00%"
+            
+            market_data.append({
+                "ticker": ticker_symbol,
+                "name": ui_data["name"],
+                "price": round(current_price, 2),
+                "icon": ui_data["icon"],
+                "category": ui_data["category"],
+                "change": change_str
+            })
+        except Exception as e:
+            print(f"Failed to fetch {ticker_symbol}: {e}")
+            
+    return market_data
+
+@router.get("/search")
+def search_global_stocks(query: str):
+    """
+    Searches Yahoo Finance for matching global and Indian stocks.
+    Fetches real-time price and daily change percentage.
+    """
+    try:
+        # 1. Use Yahoo's native search API (much faster and more reliable)
+        search_url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}&quotesCount=5"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(search_url, headers=headers)
+        
+        # If the search API fails, return an empty list safely
+        if response.status_code != 200:
+            return []
+            
+        search_results = response.json().get('quotes', [])
+        
+        live_results = []
+        for quote in search_results:
+            # 2. Keep only Stocks (EQUITY) and ETFs
+            if quote.get('quoteType') in ['EQUITY', 'ETF']:
+                ticker_symbol = quote['symbol']
+                short_name = quote.get('shortname', ticker_symbol)
+                exchange = quote.get('exchange', 'Unknown')
+                
+                try:
+                    # 3. Grab live price and calculate daily change
+                    ticker_obj = yf.Ticker(ticker_symbol)
+                    fast_info = ticker_obj.fast_info
+                    
+                    current_price = getattr(fast_info, 'last_price', None)
+                    prev_close = getattr(fast_info, 'previous_close', None)
+                    
+                    # If we can't find a live price, skip it
+                    if not current_price:
+                        continue
+                        
+                    # Calculate the percentage change
+                    if prev_close and prev_close > 0:
+                        change_percent = ((current_price - prev_close) / prev_close) * 100
+                        change_str = f"+{change_percent:.2f}%" if change_percent >= 0 else f"{change_percent:.2f}%"
+                    else:
+                        change_str = "0.00%"
+                        
+                    # 4. Smart icons: Indian flag for NSE/BSE, Globe for the rest
+                    icon = "🇮🇳" if ticker_symbol.endswith(('.NS', '.BO')) else "🌍"
+                    
+                    live_results.append({
+                        "ticker": ticker_symbol,
+                        "name": short_name,
+                        "price": round(current_price, 2),
+                        "exchange": exchange,
+                        "type": quote.get('quoteType', 'Stock'),
+                        "icon": icon,
+                        "category": exchange, 
+                        "change": change_str
+                    })
+                except Exception as inner_e:
+                    print(f"Skipping {ticker_symbol} due to price fetch error: {inner_e}")
+                    continue
+                    
+        return live_results
+
+    except Exception as e:
+        print(f"Search failed for '{query}': {e}")
+        return []

@@ -3,17 +3,38 @@ import '../styles/trading.css'
 
 export default function TradingDesk({ user, setUser }) {
   // Local state just for the trading desk sub-views
-  const [deskView, setDeskView] = useState('depot'); // 'depot' or 'market'
+  const [deskView, setDeskView] = useState('depot'); // 'depot', 'market', 'search', or 'history'
   const [portfolio, setPortfolio] = useState([]);
   const [tradeQuantities, setTradeQuantities] = useState({});
+  const [transactionHistory, setTransactionHistory] = useState([]);
 
-  // Mock data (will be replaced by Finnhub API later)
-  const marketStocks = [
-    { name: "Swiss Life AG", ticker: "SLHN", category: "Finance", price: 340.78, change: "-0.34%", icon: "💵" },
-    { name: "Spotify", ticker: "SPOT", category: "Technology", price: 117.67, change: "-17.05%", icon: "🚀" },
-    { name: "Wind Power AG", ticker: "WIND", category: "Energy", price: 236.14, change: "+1.20%", icon: "⚡" },
-    { name: "SolarCity", ticker: "SCTY", category: "Energy", price: 14.60, change: "+0.50%", icon: "☀️" }
-  ];
+  // Market data from live API
+  const [marketStocks, setMarketStocks] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Fetch market data on component mount
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/trade/market")
+      .then(res => res.json())
+      .then(data => {
+        console.log("Market Data:", data);
+        
+        if (Array.isArray(data)) {
+          setMarketStocks(data);
+        } else if (data && Array.isArray(data.stocks)) {
+          setMarketStocks(data.stocks);
+        } else {
+          console.error("Expected an array but received:", data);
+          setMarketStocks([]);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to fetch market data:", err);
+        setMarketStocks([]);
+      });
+  }, []);
 
   const fetchUserData = async () => {
     if (!user) return;
@@ -21,8 +42,12 @@ export default function TradingDesk({ user, setUser }) {
       const portRes = await fetch(`http://127.0.0.1:8000/trade/portfolio/${user.id}`);
       const portData = await portRes.json();
       setPortfolio(Array.isArray(portData) ? portData : []);
+      
+      const histRes = await fetch(`http://127.0.0.1:8000/trade/history/${user.id}`);
+      const histData = await histRes.json();
+      setTransactionHistory(Array.isArray(histData) ? histData : []);
     } catch (err) {
-      console.error("Error updating assets:", err);
+      console.error("Error fetching user data:", err);
     }
   };
 
@@ -30,6 +55,28 @@ export default function TradingDesk({ user, setUser }) {
     fetchUserData();
     // eslint-disable-next-line
   }, [user]);
+
+  const handleSearch = async (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    if (query.trim().length < 1) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/trade/search?query=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      setSearchResults(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Search failed:", err);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const handleQuickTrade = async (ticker, action) => {
     const qty = parseFloat(tradeQuantities[ticker]) || 1;
@@ -76,13 +123,25 @@ export default function TradingDesk({ user, setUser }) {
           className={`tab-btn ${deskView === 'depot' ? 'active' : ''}`}
           onClick={() => setDeskView('depot')}
         >
-          My Depot
+          💼 My Depot
         </button>
         <button 
           className={`tab-btn ${deskView === 'market' ? 'active' : ''}`}
           onClick={() => setDeskView('market')}
         >
-          Market Explorer
+          📈 Market Explorer
+        </button>
+        <button 
+          className={`tab-btn ${deskView === 'search' ? 'active' : ''}`}
+          onClick={() => setDeskView('search')}
+        >
+          🔍 Search Stocks
+        </button>
+        <button 
+          className={`tab-btn ${deskView === 'history' ? 'active' : ''}`}
+          onClick={() => setDeskView('history')}
+        >
+          📋 Transaction History
         </button>
       </div>
 
@@ -175,6 +234,96 @@ export default function TradingDesk({ user, setUser }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* SEARCH VIEW */}
+      {deskView === 'search' && (
+        <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
+          <div style={{marginBottom: '20px'}}>
+            <input 
+              type="text" 
+              placeholder="Search stocks by ticker or name (e.g., AAPL, Tesla)..."
+              value={searchQuery}
+              onChange={handleSearch}
+              className="inline-input"
+              style={{width: '100%', padding: '12px', fontSize: '16px'}}
+            />
+            {isSearching && <p style={{color: '#888', marginTop: '8px'}}>🔍 Searching...</p>}
+          </div>
+
+          {searchResults.length === 0 && searchQuery && !isSearching && (
+            <p style={{color: '#888', fontStyle: 'italic'}}>No stocks found for "{searchQuery}". Try another search.</p>
+          )}
+
+          {searchResults.map((stock) => {
+            const ownedItem = portfolio.find(p => p.ticker === stock.ticker);
+            return (
+              <div key={stock.ticker} className="market-row-card">
+                <div>
+                  <h3 style={{fontFamily: "'DM Serif Display', serif", fontSize: '22px'}}>{stock.name}</h3>
+                  <p style={{margin: '4px 0'}}>Ticker: <strong>{stock.ticker}</strong></p>
+                  <p style={{margin: '4px 0'}}>Price: <strong>${stock.price}</strong></p>
+                  <p style={{fontSize: '14px', color: '#666'}}>Exchange: {stock.exchange} | Type: {stock.type}</p>
+                  <p style={{margin: '6px 0', fontSize: '14px'}}>Owning: <strong>{ownedItem ? ownedItem.shares_owned : 0}</strong></p>
+                  
+                  <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px'}}>
+                    <button onClick={() => handleQuickTrade(stock.ticker, 'BUY')} className="action-btn">➕ Buy</button>
+                    <input 
+                      type="number" 
+                      value={tradeQuantities[stock.ticker] || 1} 
+                      onChange={(e) => handleQuantityChange(stock.ticker, e.target.value)}
+                      className="inline-input" 
+                      style={{width: '60px'}}
+                    />
+                    <button onClick={() => handleQuickTrade(stock.ticker, 'SELL')} className="action-btn">➖ Sell</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* TRANSACTION HISTORY VIEW */}
+      {deskView === 'history' && (
+        <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
+          <h3 style={{fontFamily: "'DM Serif Display', serif"}}>📋 Transaction History</h3>
+          
+          {transactionHistory.length === 0 ? (
+            <p style={{color: '#888', fontStyle: 'italic'}}>No transactions yet. Start trading to build your history!</p>
+          ) : (
+            <table style={{width: '100%', borderCollapse: 'collapse', backgroundColor: '#f9f9f9', borderRadius: '8px', overflow: 'hidden'}}>
+              <thead>
+                <tr style={{backgroundColor: '#2c3e50', color: 'white', textAlign: 'left'}}>
+                  <th style={{padding: '12px', borderBottom: '2px solid #34495e'}}>Date & Time</th>
+                  <th style={{padding: '12px', borderBottom: '2px solid #34495e'}}>Action</th>
+                  <th style={{padding: '12px', borderBottom: '2px solid #34495e'}}>Ticker</th>
+                  <th style={{padding: '12px', borderBottom: '2px solid #34495e'}}>Shares</th>
+                  <th style={{padding: '12px', borderBottom: '2px solid #34495e'}}>Price per Share</th>
+                  <th style={{padding: '12px', borderBottom: '2px solid #34495e'}}>Total Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactionHistory.map((tx, idx) => {
+                  const totalValue = (tx.shares * tx.price_per_share).toFixed(2);
+                  const timestamp = new Date(tx.timestamp).toLocaleString();
+                  const actionColor = tx.action === 'BUY' ? '#27ae60' : '#e74c3c';
+                  
+                  return (
+                    <tr key={idx} style={{borderBottom: '1px solid #ecf0f1'}}>
+                      <td style={{padding: '12px'}}>{timestamp}</td>
+                      <td style={{padding: '12px', fontWeight: 'bold', color: actionColor}}>{tx.action}</td>
+                      <td style={{padding: '12px', fontWeight: 'bold'}}>{tx.ticker}</td>
+                      <td style={{padding: '12px'}}>{tx.shares}</td>
+                      <td style={{padding: '12px'}}>${tx.price_per_share.toFixed(2)}</td>
+                      <td style={{padding: '12px', fontWeight: 'bold'}}>${totalValue}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
     </div>
