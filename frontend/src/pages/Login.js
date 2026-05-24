@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../config/api';
 
 export default function Login({ onLoginSuccess }) {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -21,7 +22,7 @@ export default function Login({ onLoginSuccess }) {
     const endpoint = isRegistering ? 'create-user' : 'login';
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/auth/${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: cleanedUsername, password: cleanedPassword }) // ← UPDATED

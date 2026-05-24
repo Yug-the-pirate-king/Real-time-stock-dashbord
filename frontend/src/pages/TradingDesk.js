@@ -4,6 +4,7 @@ import { RiStockFill } from "react-icons/ri";
 import { IoSearchCircle } from "react-icons/io5";
 import { FaHistory } from "react-icons/fa";
 import { MdOutlineSavings } from "react-icons/md";
+import { API_BASE_URL } from '../config/api';
 import '../styles/trading.css'
 
 export default function TradingDesk({ user, setUser }) {
@@ -20,7 +21,7 @@ export default function TradingDesk({ user, setUser }) {
 
   // Fetch market data on component mount
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/trade/market")
+    fetch(`${API_BASE_URL}/trade/market`)
       .then(res => res.json())
       .then(data => {
         console.log("Market Data:", data);
@@ -43,11 +44,11 @@ export default function TradingDesk({ user, setUser }) {
   const fetchUserData = async () => {
     if (!user) return;
     try {
-      const portRes = await fetch(`http://127.0.0.1:8000/trade/portfolio/${user.id}`);
+      const portRes = await fetch(`${API_BASE_URL}/trade/portfolio/${user.id}`);
       const portData = await portRes.json();
       setPortfolio(Array.isArray(portData) ? portData : []);
       
-      const histRes = await fetch(`http://127.0.0.1:8000/trade/history/${user.id}`);
+      const histRes = await fetch(`${API_BASE_URL}/trade/history/${user.id}`);
       const histData = await histRes.json();
       setTransactionHistory(Array.isArray(histData) ? histData : []);
     } catch (err) {
@@ -71,7 +72,7 @@ export default function TradingDesk({ user, setUser }) {
     
     setIsSearching(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/trade/search?query=${encodeURIComponent(query)}`);
+      const response = await fetch(`${API_BASE_URL}/trade/search?query=${encodeURIComponent(query)}`);
       const data = await response.json();
       setSearchResults(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -88,7 +89,7 @@ export default function TradingDesk({ user, setUser }) {
 
   try {
     const response = await fetch(
-      `http://127.0.0.1:8000/trade/${endpoint}?user_id=${user.id}&ticker=${ticker}&quantity=${qty}`,
+      `${API_BASE_URL}/trade/${endpoint}?user_id=${user.id}&ticker=${ticker}&quantity=${qty}`,
       { method: 'POST' }
     );
 
