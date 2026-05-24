@@ -10,9 +10,17 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Scalable Stock Simulator Engine")
 
+# Explicitly list the URLs allowed to talk to your backend API
+origins = [
+    "https://stock-simulator-predictor.vercel.app",         # Your main live frontend
+    "https://stock-simulator-predictor-ipx1c0929.vercel.app", # The specific Vercel preview deployment
+    "http://localhost:3000",                                 # Local development fallback
+    "http://127.0.0.1:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
