@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { MdOutlineEnergySavingsLeaf } from "react-icons/md";
+import { RiStockFill } from "react-icons/ri";
+import { IoSearchCircle } from "react-icons/io5";
+import { FaHistory } from "react-icons/fa";
+import { MdOutlineSavings } from "react-icons/md";
 import '../styles/trading.css'
 
 export default function TradingDesk({ user, setUser }) {
@@ -8,7 +13,6 @@ export default function TradingDesk({ user, setUser }) {
   const [tradeQuantities, setTradeQuantities] = useState({});
   const [transactionHistory, setTransactionHistory] = useState([]);
 
-  // Market data from live API
   const [marketStocks, setMarketStocks] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,30 +82,46 @@ export default function TradingDesk({ user, setUser }) {
     }
   };
 
-  const handleQuickTrade = async (ticker, action) => {
-    const qty = parseFloat(tradeQuantities[ticker]) || 1;
-    const endpoint = action === 'BUY' ? 'buy' : 'sell';
-    
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/trade/${endpoint}?user_id=${user.id}&ticker=${ticker}&quantity=${qty}`,
-        { method: 'POST' }
-      );
-      const data = await response.json();
+ const handleQuickTrade = async (ticker, action) => {
+  const qty = parseFloat(tradeQuantities[ticker]) || 1;
+  const endpoint = action === 'BUY' ? 'buy' : 'sell';
 
-      if (response.ok) {
-        alert(data.message);
-        // Update user state at the App.js level to reflect the new balance everywhere
-        setUser(prev => ({ ...prev, balance: data.new_balance }));
-        fetchUserData();
-      } else {
-        alert(data.detail || "Transaction rejected.");
-      }
-    } catch (err) {
-      alert("Cannot connect to trading engine backend.");
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/trade/${endpoint}?user_id=${user.id}&ticker=${ticker}&quantity=${qty}`,
+      { method: 'POST' }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert(data.message);
+
+      // Update React state + keep localStorage synced
+      setUser(prev => {
+        const updatedUser = {
+          ...prev,
+          balance: data.new_balance
+        };
+
+        localStorage.setItem(
+          'trader_user',
+          JSON.stringify(updatedUser)
+        );
+
+        return updatedUser;
+      });
+
+      fetchUserData();
+    } else {
+      alert(data.detail || "Transaction rejected.");
     }
-  };
 
+  } catch (err) {
+    alert("Cannot connect to trading engine backend.");
+    console.error(err);
+  }
+};
   const handleQuantityChange = (ticker, value) => {
     setTradeQuantities(prev => ({ ...prev, [ticker]: value }));
   };
@@ -112,36 +132,31 @@ export default function TradingDesk({ user, setUser }) {
 
   return (
     <div>
-      <div className="construction-banner">
-        <span style={{ marginRight: '10px', fontSize: '1.1rem' }}>⚠️</span> 
-        <strong>SYSTEM STATUS: UNDER CONSTRUCTION</strong> — Sandbox broker engine integration is actively running in simulated evaluation mode.
-      </div>
-
       {/* TRADING DESK SUB-NAVIGATION */}
       <div className="desk-tabs">
         <button 
           className={`tab-btn ${deskView === 'depot' ? 'active' : ''}`}
           onClick={() => setDeskView('depot')}
         >
-          💼 My Depot
+          <MdOutlineEnergySavingsLeaf /> My Depot
         </button>
         <button 
           className={`tab-btn ${deskView === 'market' ? 'active' : ''}`}
           onClick={() => setDeskView('market')}
         >
-          📈 Market Explorer
+          <RiStockFill /> Market Explorer
         </button>
         <button 
           className={`tab-btn ${deskView === 'search' ? 'active' : ''}`}
           onClick={() => setDeskView('search')}
         >
-          🔍 Search Stocks
+          <IoSearchCircle /> Search Stocks
         </button>
         <button 
           className={`tab-btn ${deskView === 'history' ? 'active' : ''}`}
           onClick={() => setDeskView('history')}
         >
-          📋 Transaction History
+          <FaHistory /> Transaction History
         </button>
       </div>
 
@@ -150,14 +165,14 @@ export default function TradingDesk({ user, setUser }) {
         <div>
           <div className="top-card-grid">
             <div className="stat-card">
-              <span style={{fontSize: '2rem'}}>🐷</span>
+              <span style={{fontSize: '2rem'}}><MdOutlineSavings /></span>
               <div>
                 <label className="card-label">Cash Account Balance</label>
                 <p className="card-val">${user?.balance?.toLocaleString(undefined, {minimumFractionDigits: 2}) || '0.00'}</p>
               </div>
             </div>
             <div className="stat-card">
-              <span style={{fontSize: '2rem'}}>📊</span>
+              <span style={{fontSize: '2rem'}}><RiStockFill /></span>
               <div>
                 <label className="card-label">Stock Asset Balance</label>
                 <p className="card-val">${calculateStockBalance().toLocaleString(undefined, {minimumFractionDigits: 2})}</p>

@@ -1,13 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 import yfinance as yf
 import requests
+from cachetools import TTLCache, cached
+import concurrent.futures
 
 # Import the shared database connector and your structural model blueprints
 from database import SessionLocal
 from models.auth import User
 from models.trading import Portfolio, TransactionHistory
 
+# Define the router ONCE
 router = APIRouter(prefix="/trade", tags=["Trading Operations"])
 
 # Database connection helper
@@ -127,6 +130,7 @@ def get_user_portfolio(user_id: int, db: Session = Depends(get_db)):
 def get_user_history(user_id: int, db: Session = Depends(get_db)):
     return db.query(TransactionHistory).filter(TransactionHistory.user_id == user_id).order_by(TransactionHistory.timestamp.desc()).all()
 
+
 # ==========================================
 # 4. MARKET DATA & GLOBAL SEARCH
 # ==========================================
@@ -174,67 +178,87 @@ def get_real_market_data():
             
     return market_data
 
+# ==========================================
+# 5. SEARCH ENGINE
+# ==========================================
+
+# Setup in-memory caches to offload yfinance
+query_cache = TTLCache(maxsize=500, ttl=60) 
+price_cache = TTLCache(maxsize=1000, ttl=30)
+
+def fetch_price_data(quote):
+    """Helper function to process a single ticker."""
+    ticker_symbol = quote['symbol']
+    
+    # Check cache first
+    if ticker_symbol in price_cache:
+        return price_cache[ticker_symbol]
+        
+    try:
+        ticker_obj = yf.Ticker(ticker_symbol)
+        fast_info = ticker_obj.fast_info
+        
+        current_price = getattr(fast_info, 'last_price', None)
+        prev_close = getattr(fast_info, 'previous_close', None)
+        
+        if not current_price:
+            return None
+            
+        change_str = "0.00%"
+        if prev_close and prev_close > 0:
+            change_percent = ((current_price - prev_close) / prev_close) * 100
+            change_str = f"+{change_percent:.2f}%" if change_percent >= 0 else f"{change_percent:.2f}%"
+            
+        exchange = quote.get('exchange', 'Unknown')
+        icon = "🇮🇳" if ticker_symbol.endswith(('.NS', '.BO')) else "🌍"
+        
+        result = {
+            "ticker": ticker_symbol,
+            "name": quote.get('shortname', ticker_symbol),
+            "price": round(current_price, 2),
+            "exchange": exchange,
+            "type": quote.get('quoteType', 'Stock'),
+            "icon": icon,
+            "category": exchange, 
+            "change": change_str
+        }
+        
+        # Save the result to our price cache before returning
+        price_cache[ticker_symbol] = result
+        return result
+        
+    except Exception as e:
+        print(f"Skipping {ticker_symbol}: {e}")
+        return None
+
 @router.get("/search")
-def search_global_stocks(query: str):
+@cached(cache=query_cache) 
+def search_global_stocks(query: str = Query(..., min_length=3)):
     """
-    Searches Yahoo Finance for matching global and Indian stocks.
-    Fetches real-time price and daily change percentage.
+    Searches Yahoo Finance with caching and parallel processing.
+    Requires at least 3 characters to execute (min_length=3).
     """
     try:
-        # 1. Use Yahoo's native search API (much faster and more reliable)
         search_url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}&quotesCount=5"
         headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(search_url, headers=headers)
         
-        # If the search API fails, return an empty list safely
+        # Timeout to prevent hanging connections
+        response = requests.get(search_url, headers=headers, timeout=5) 
+        
         if response.status_code != 200:
             return []
             
-        search_results = response.json().get('quotes', [])
+        quotes = [q for q in response.json().get('quotes', []) if q.get('quoteType') in ['EQUITY', 'ETF']]
         
         live_results = []
-        for quote in search_results:
-            # 2. Keep only Stocks (EQUITY) and ETFs
-            if quote.get('quoteType') in ['EQUITY', 'ETF']:
-                ticker_symbol = quote['symbol']
-                short_name = quote.get('shortname', ticker_symbol)
-                exchange = quote.get('exchange', 'Unknown')
-                
-                try:
-                    # 3. Grab live price and calculate daily change
-                    ticker_obj = yf.Ticker(ticker_symbol)
-                    fast_info = ticker_obj.fast_info
-                    
-                    current_price = getattr(fast_info, 'last_price', None)
-                    prev_close = getattr(fast_info, 'previous_close', None)
-                    
-                    # If we can't find a live price, skip it
-                    if not current_price:
-                        continue
-                        
-                    # Calculate the percentage change
-                    if prev_close and prev_close > 0:
-                        change_percent = ((current_price - prev_close) / prev_close) * 100
-                        change_str = f"+{change_percent:.2f}%" if change_percent >= 0 else f"{change_percent:.2f}%"
-                    else:
-                        change_str = "0.00%"
-                        
-                    # 4. Smart icons: Indian flag for NSE/BSE, Globe for the rest
-                    icon = "🇮🇳" if ticker_symbol.endswith(('.NS', '.BO')) else "🌍"
-                    
-                    live_results.append({
-                        "ticker": ticker_symbol,
-                        "name": short_name,
-                        "price": round(current_price, 2),
-                        "exchange": exchange,
-                        "type": quote.get('quoteType', 'Stock'),
-                        "icon": icon,
-                        "category": exchange, 
-                        "change": change_str
-                    })
-                except Exception as inner_e:
-                    print(f"Skipping {ticker_symbol} due to price fetch error: {inner_e}")
-                    continue
+        
+        # Fetch prices concurrently
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            results = executor.map(fetch_price_data, quotes)
+            
+            for res in results:
+                if res:
+                    live_results.append(res)
                     
         return live_results
 

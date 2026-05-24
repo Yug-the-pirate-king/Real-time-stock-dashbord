@@ -13,12 +13,40 @@ const VIEWS = [
 ];
 
 export default function App() {
-  const [user, setUser]       = useState(null);
-  const [phase, setPhase]     = useState('landing');
-  const [view, setView]       = useState('trading-desk');
+  // 1. Initialize user state from localStorage if it exists
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('trader_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  // 2. Automatically skip landing/auth phases if a user is already cached
+  const [phase, setPhase] = useState(() => {
+    const savedUser = localStorage.getItem('trader_user');
+    return savedUser ? 'app' : 'landing';
+  });
+
+  const [view, setView] = useState('trading-desk');
+
+  // 3. Helper to handle manual sign-outs cleanly
+  const handleLogout = (e) => {
+    e.preventDefault();
+    localStorage.removeItem('trader_user');
+    setUser(null);
+    setPhase('landing');
+  };
 
   if (phase === 'landing') return <LandingPage onStart={() => setPhase('auth')} />;
-  if (phase === 'auth')    return <Login onLoginSuccess={u => { setUser(u); setPhase('app'); }} />;
+  
+  if (phase === 'auth') return (
+    <Login 
+      onLoginSuccess={u => { 
+        // Save to cache on successful sign-in
+        localStorage.setItem('trader_user', JSON.stringify(u));
+        setUser(u); 
+        setPhase('app'); 
+      }} 
+    />
+  );
 
   const activeLabel = VIEWS.find(v => v.id === view)?.label;
 
@@ -26,7 +54,8 @@ export default function App() {
     <div className="desk-wrapper">
 
       <aside className="sidebar">
-        <a className="sidebar-logo" href="#">
+        {/* Changed href from "landingPage" to preventing accidental reloads */}
+        <a className="sidebar-logo" href="#" onClick={(e) => e.preventDefault()}>
           <span className="logo-dot" />
           StockPulse
         </a>
@@ -46,6 +75,22 @@ export default function App() {
         <div className="sidebar-user">
           <p className="user-label">Logged in as</p>
           <p className="user-name">{user?.username || 'Trader'}</p>
+          <button 
+            onClick={handleLogout}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ff4d4d',
+              cursor: 'pointer',
+              padding: '0',
+              fontSize: '12px',
+              marginTop: '5px',
+              textAlign: 'left',
+              textDecoration: 'underline'
+            }}
+          >
+            Sign Out
+          </button>
         </div>
       </aside>
 
@@ -59,7 +104,8 @@ export default function App() {
         </header>
 
         <main className="view-content">
-          {view === 'trading-desk' && <TradingDesk user={user} />}
+          {/* setUser is safely wired up here now */}
+          {view === 'trading-desk' && <TradingDesk user={user} setUser={setUser} />}
           {view === 'news-feed'    && <NewsFeed    user={user} />}
           {view === 'ai-model'     && <AiModel     user={user} />}
         </main>
