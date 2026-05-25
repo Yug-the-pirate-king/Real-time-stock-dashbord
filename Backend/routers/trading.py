@@ -51,7 +51,9 @@ def buy_stock(
     data = stock.history(period="1d")
     if data.empty:
         raise HTTPException(status_code=400, detail=f"Invalid ticker symbol: {ticker}")
-    current_price = data['Close'].iloc[-1]
+        
+    # FIXED: Explicitly cast to native standard Python float to prevent NumPy schema compilation errors
+    current_price = float(data['Close'].iloc[-1])
     
     # Financial math check
     total_cost = current_price * quantity
@@ -117,7 +119,9 @@ def sell_stock(
     data = stock.history(period="1d")
     if data.empty:
         raise HTTPException(status_code=400, detail="Error fetching market price.")
-    current_price = data['Close'].iloc[-1]
+        
+    # FIXED: Explicitly cast to native standard Python float to prevent NumPy schema compilation errors
+    current_price = float(data['Close'].iloc[-1])
     
     # Financial math calculation
     total_revenue = current_price * quantity
