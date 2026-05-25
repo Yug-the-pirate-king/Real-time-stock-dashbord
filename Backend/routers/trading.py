@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import BigInteger
 from sqlalchemy.orm import Session
 import yfinance as yf
 import requests
@@ -25,7 +26,12 @@ def get_db():
 # 1. THE BUY ENGINE
 # ==========================================
 @router.post("/buy")
-def buy_stock(user_id: int, ticker: str, quantity: float, db: Session = Depends(get_db)):
+def buy_stock(
+    user_id: int = Query(...), 
+    ticker: str = Query(...), 
+    quantity: float = Query(...), 
+    db: Session = Depends(get_db)
+):
     ticker = ticker.upper()
     if quantity <= 0:
         raise HTTPException(status_code=400, detail="Quantity must be greater than zero.")
@@ -75,7 +81,12 @@ def buy_stock(user_id: int, ticker: str, quantity: float, db: Session = Depends(
 # 2. THE SELL ENGINE
 # ==========================================
 @router.post("/sell")
-def sell_stock(user_id: int, ticker: str, quantity: float, db: Session = Depends(get_db)):
+def sell_stock(
+    user_id: int = Query(...), 
+    ticker: str = Query(...), 
+    quantity: float = Query(...), 
+    db: Session = Depends(get_db)
+):
     ticker = ticker.upper()
     if quantity <= 0:
         raise HTTPException(status_code=400, detail="Quantity must be greater than zero.")
@@ -134,8 +145,6 @@ def get_user_history(user_id: int, db: Session = Depends(get_db)):
 # ==========================================
 # 4. MARKET DATA & GLOBAL SEARCH
 # ==========================================
-
-# Default stocks to show when the user first opens the Market tab
 WATCHLIST = {
     "AAPL": {"name": "Apple Inc.", "icon": "🍎", "category": "Technology"},
     "MSFT": {"name": "Microsoft Corp", "icon": "🪟", "category": "Technology"},
@@ -178,19 +187,16 @@ def get_real_market_data():
             
     return market_data
 
+
 # ==========================================
 # 5. SEARCH ENGINE
 # ==========================================
-
-# Setup in-memory caches to offload yfinance
 query_cache = TTLCache(maxsize=500, ttl=60) 
 price_cache = TTLCache(maxsize=1000, ttl=30)
 
 def fetch_price_data(quote):
     """Helper function to process a single ticker."""
     ticker_symbol = quote['symbol']
-    
-    # Check cache first
     if ticker_symbol in price_cache:
         return price_cache[ticker_symbol]
         
@@ -223,7 +229,6 @@ def fetch_price_data(quote):
             "change": change_str
         }
         
-        # Save the result to our price cache before returning
         price_cache[ticker_symbol] = result
         return result
         
@@ -234,28 +239,20 @@ def fetch_price_data(quote):
 @router.get("/search")
 @cached(cache=query_cache) 
 def search_global_stocks(query: str = Query(..., min_length=3)):
-    """
-    Searches Yahoo Finance with caching and parallel processing.
-    Requires at least 3 characters to execute (min_length=3).
-    """
+    """Searches Yahoo Finance with caching and parallel processing."""
     try:
         search_url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}&quotesCount=5"
         headers = {"User-Agent": "Mozilla/5.0"}
-        
-        # Timeout to prevent hanging connections
         response = requests.get(search_url, headers=headers, timeout=5) 
         
         if response.status_code != 200:
             return []
             
         quotes = [q for q in response.json().get('quotes', []) if q.get('quoteType') in ['EQUITY', 'ETF']]
-        
         live_results = []
         
-        # Fetch prices concurrently
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             results = executor.map(fetch_price_data, quotes)
-            
             for res in results:
                 if res:
                     live_results.append(res)
