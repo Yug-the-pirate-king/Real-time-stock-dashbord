@@ -14,6 +14,11 @@ from models.trading import Portfolio, TransactionHistory
 # Define the router ONCE
 router = APIRouter(prefix="/trade", tags=["Trading Operations"])
 
+# Global caches to prevent rate limiting and optimize performance
+query_cache = TTLCache(maxsize=500, ttl=60) 
+price_cache = TTLCache(maxsize=1000, ttl=30)
+market_cache = TTLCache(maxsize=1, ttl=30) # Caches the watchlist dashboard for 30 seconds
+
 # Database connection helper
 def get_db():
     db = SessionLocal()
@@ -168,7 +173,7 @@ def get_user_history(user_id: str, db: Session = Depends(get_db)):
 
 
 # ==========================================
-# 4. MARKET DATA & GLOBAL SEARCH
+# 4. MARKET DATA & GLOBAL WATCHLIST
 # ==========================================
 WATCHLIST = {
     "AAPL": {"name": "Apple Inc.", "icon": "🍎", "category": "Technology"},
@@ -179,6 +184,7 @@ WATCHLIST = {
 }
 
 @router.get("/market")
+@cached(cache=market_cache) # Added: Prevents multiple quick refreshes from rate-limiting your app
 def get_real_market_data():
     """Returns live prices for the default watchlist."""
     market_data = []
@@ -216,9 +222,6 @@ def get_real_market_data():
 # ==========================================
 # 5. SEARCH ENGINE
 # ==========================================
-query_cache = TTLCache(maxsize=500, ttl=60) 
-price_cache = TTLCache(maxsize=1000, ttl=30)
-
 def fetch_price_data(quote):
     """Helper function to process a single ticker."""
     ticker_symbol = quote['symbol']
