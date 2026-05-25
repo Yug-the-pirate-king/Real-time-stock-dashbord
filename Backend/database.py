@@ -13,17 +13,10 @@ if DATABASE_URL:
     if DATABASE_URL.startswith("postgresql://"):
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "cockroachdb://", 1)
         
-    # Create the cloud engine with explicit SSL connection arguments
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args={
-            "sslmode": "verify-full",
-            "sslrootcert": "system"
-        },
-        echo=False
-    )
+    # Create the cloud engine relying purely on the optimized connection string URL
+    engine = create_engine(DATABASE_URL, echo=False)
 else:
-    # Local fallback to SQLite for offline work
+    # Local fallback to SQLite
     SQLALCHEMY_DATABASE_URL = "sqlite:///./simulator.db"
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
