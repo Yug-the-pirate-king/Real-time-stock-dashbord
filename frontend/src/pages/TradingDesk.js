@@ -46,9 +46,12 @@ export default function TradingDesk({ user, setUser }) {
 
   const fetchUserPortfolio = async () => {
     try {
+      // FIXED: Force user.id to be evaluated explicitly as a String parameter
+      const safeUserId = String(user.id);
+      
       const [portRes, histRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/trade/portfolio/${user.id}`),
-        fetch(`${API_BASE_URL}/trade/history/${user.id}`)
+        fetch(`${API_BASE_URL}/trade/portfolio/${safeUserId}`),
+        fetch(`${API_BASE_URL}/trade/history/${safeUserId}`)
       ]);
       const portData = await portRes.json();
       const histData = await histRes.json();
@@ -91,8 +94,11 @@ export default function TradingDesk({ user, setUser }) {
     }
 
     try {
+      // FIXED: Treat the User ID strictly as a text String sequence during template building
+      const safeUserId = String(user.id);
+
       const res = await fetch(
-        `${API_BASE_URL}/trade/${endpoint}?user_id=${user.id}&ticker=${ticker}&quantity=${qty}`,
+        `${API_BASE_URL}/trade/${endpoint}?user_id=${safeUserId}&ticker=${ticker}&quantity=${qty}`,
         { method: 'POST' }
       );
 
@@ -104,7 +110,9 @@ export default function TradingDesk({ user, setUser }) {
           ...prev,
           balance: data.new_balance
         }));
-        localStorage.setItem('trader_user', JSON.stringify({ ...user, balance: data.new_balance }));
+        
+        // Keep string parsing persistent across session updates
+        localStorage.setItem('trader_user', JSON.stringify({ ...user, id: safeUserId, balance: data.new_balance }));
         setTradeQuantities(prev => ({ ...prev, [ticker]: 1 }));
         fetchUserPortfolio();
         loadMarketData();

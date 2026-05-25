@@ -31,7 +31,8 @@ export default function Login({ onLoginSuccess }) {
       const data = await response.json();
 
       if (response.ok) {
-        onLoginSuccess({ id: data.id, username: data.username, balance: data.balance });
+        //  FIXED: Wrap data.id inside String() constructor to stop 64-bit precision truncation
+        onLoginSuccess({ id: String(data.id), username: data.username, balance: data.balance });
       } else {
         setErrorMessage(data.detail || 'Authentication failed.');
       }
