@@ -1,10 +1,12 @@
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, String, Float, BigInteger
 from database import Base
 import bcrypt
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
+    
+    # Updated from Integer to BigInteger to handle CockroachDB INT8 unique_rowid values
+    id = Column(BigInteger, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password_hash = Column(String, nullable=False)
     balance = Column(Float, default=5000.0)
