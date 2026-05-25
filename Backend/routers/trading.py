@@ -33,7 +33,7 @@ def buy_stock(
     db: Session = Depends(get_db)
 ):
     try:
-        user_id = int(user_id)
+        user_big_id = int(user_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="user_id must be a valid integer.")
     
@@ -42,7 +42,7 @@ def buy_stock(
         raise HTTPException(status_code=400, detail="Quantity must be greater than zero.")
     
     # Check if user exists
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == user_big_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
         
@@ -62,7 +62,7 @@ def buy_stock(
     user.balance -= total_cost
     
     # Update portfolio holdings
-    portfolio_item = db.query(Portfolio).filter(Portfolio.user_id == user_id, Portfolio.ticker == ticker).first()
+    portfolio_item = db.query(Portfolio).filter(Portfolio.user_id == user_big_id, Portfolio.ticker == ticker).first()
     if portfolio_item:
         # User already owns this stock -> Calculate new average buy price
         new_total_shares = portfolio_item.shares_owned + quantity
@@ -71,11 +71,11 @@ def buy_stock(
         portfolio_item.shares_owned = new_total_shares
     else:
         # Brand new ticker holding for this user
-        new_holding = Portfolio(user_id=user_id, ticker=ticker, shares_owned=quantity, average_buy_price=current_price)
+        new_holding = Portfolio(user_id=user_big_id, ticker=ticker, shares_owned=quantity, average_buy_price=current_price)
         db.add(new_holding)
         
     # Write a permanent receipt to the ledger with automatic timestamp
-    history_log = TransactionHistory(user_id=user_id, ticker=ticker, action="BUY", shares=quantity, price_per_share=current_price)
+    history_log = TransactionHistory(user_id=user_big_id, ticker=ticker, action="BUY", shares=quantity, price_per_share=current_price)
     db.add(history_log)
     
     db.commit()
@@ -93,7 +93,7 @@ def sell_stock(
     db: Session = Depends(get_db)
 ):
     try:
-        user_id = int(user_id)
+        user_big_id = int(user_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="user_id must be a valid integer.")
     
@@ -102,12 +102,12 @@ def sell_stock(
         raise HTTPException(status_code=400, detail="Quantity must be greater than zero.")
     
     # Check if user exists
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == user_big_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
         
     # Check if the user even owns this stock ticker
-    portfolio_item = db.query(Portfolio).filter(Portfolio.user_id == user_id, Portfolio.ticker == ticker).first()
+    portfolio_item = db.query(Portfolio).filter(Portfolio.user_id == user_big_id, Portfolio.ticker == ticker).first()
     if not portfolio_item or portfolio_item.shares_owned < quantity:
         current_holdings = portfolio_item.shares_owned if portfolio_item else 0.0
         raise HTTPException(status_code=400, detail=f"You don't own enough shares of {ticker}. Trying to sell: {quantity}, You own: {current_holdings}")
@@ -133,7 +133,7 @@ def sell_stock(
         db.delete(portfolio_item)
         
     # Write a permanent receipt to the ledger with automatic timestamp
-    history_log = TransactionHistory(user_id=user_id, ticker=ticker, action="SELL", shares=quantity, price_per_share=current_price)
+    history_log = TransactionHistory(user_id=user_big_id, ticker=ticker, action="SELL", shares=quantity, price_per_share=current_price)
     db.add(history_log)
     
     db.commit()
@@ -144,12 +144,23 @@ def sell_stock(
 # 3. THE UTILITY GETTERS (For Frontend Display)
 # ==========================================
 @router.get("/portfolio/{user_id}")
-def get_user_portfolio(user_id: int, db: Session = Depends(get_db)):
-    return db.query(Portfolio).filter(Portfolio.user_id == user_id).all()
+def get_user_portfolio(user_id: str, db: Session = Depends(get_db)):
+    try:
+        user_big_id = int(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="user_id must be a valid integer sequence.")
+        
+    return db.query(Portfolio).filter(Portfolio.user_id == user_big_id).all()
+
 
 @router.get("/history/{user_id}")
-def get_user_history(user_id: int, db: Session = Depends(get_db)):
-    return db.query(TransactionHistory).filter(TransactionHistory.user_id == user_id).order_by(TransactionHistory.timestamp.desc()).all()
+def get_user_history(user_id: str, db: Session = Depends(get_db)):
+    try:
+        user_big_id = int(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="user_id must be a valid integer sequence.")
+        
+    return db.query(TransactionHistory).filter(TransactionHistory.user_id == user_big_id).order_by(TransactionHistory.timestamp.desc()).all()
 
 
 # ==========================================

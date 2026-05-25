@@ -39,7 +39,8 @@ def create_user(payload: UserAuthPayload, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     
-    return {"id": new_user.id, "username": new_user.username, "balance": new_user.balance}
+    # CONVERT ID TO STRING: Prevents JavaScript precision rounding errors
+    return {"id": str(new_user.id), "username": new_user.username, "balance": new_user.balance}
 
 @router.post("/login")
 def login(payload: UserAuthPayload, db: Session = Depends(get_db)):
@@ -53,4 +54,5 @@ def login(payload: UserAuthPayload, db: Session = Depends(get_db)):
     if not user or not verify_password(password_cleaned, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid username or password.")
         
-    return {"id": user.id, "username": user.username, "balance": user.balance}
+    # CONVERT ID TO STRING: Prevents JavaScript precision rounding errors
+    return {"id": str(user.id), "username": user.username, "balance": user.balance}
