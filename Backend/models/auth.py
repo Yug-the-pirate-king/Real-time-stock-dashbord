@@ -7,7 +7,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password_hash = Column(String, nullable=False)
-    balance = Column(Float, default=100000.0)
+    balance = Column(Float, default=5000.0)
 
 # --- Password Hashing Helpers ---
 
