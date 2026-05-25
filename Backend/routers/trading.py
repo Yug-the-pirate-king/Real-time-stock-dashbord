@@ -27,11 +27,16 @@ def get_db():
 # ==========================================
 @router.post("/buy")
 def buy_stock(
-    user_id: int = Query(...), 
+    user_id: str = Query(...), 
     ticker: str = Query(...), 
     quantity: float = Query(...), 
     db: Session = Depends(get_db)
 ):
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="user_id must be a valid integer.")
+    
     ticker = ticker.upper()
     if quantity <= 0:
         raise HTTPException(status_code=400, detail="Quantity must be greater than zero.")
@@ -82,11 +87,16 @@ def buy_stock(
 # ==========================================
 @router.post("/sell")
 def sell_stock(
-    user_id: int = Query(...), 
+    user_id: str = Query(...), 
     ticker: str = Query(...), 
     quantity: float = Query(...), 
     db: Session = Depends(get_db)
 ):
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="user_id must be a valid integer.")
+    
     ticker = ticker.upper()
     if quantity <= 0:
         raise HTTPException(status_code=400, detail="Quantity must be greater than zero.")
