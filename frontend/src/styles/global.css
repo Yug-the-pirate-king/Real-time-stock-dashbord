@@ -639,3 +639,94 @@ body {
   .topbar { padding: 0 16px; }
   .login-card { padding: 28px 24px; }
 }
+/* Container Layout management */
+.desk-wrapper {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Sidebar Defaults */
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  height: 100%;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  z-index: 100;
+}
+
+/* COMPLETE COLLAPSE: Force total elimination of width */
+.sidebar.collapsed {
+  width: 0px !important;
+  min-width: 0px !important;
+  max-width: 0px !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* Keeps inner text items from wrapping ugly or forcing a scrollbar during transition */
+.sidebar-content-wrapper {
+  width: 260px; 
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main Content Wrapper - forces sub-views to recalculate within shrinking confines */
+.main-wrap {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0; /* CRITICAL: Allows flex items to shrink below content size */
+  width: 100%;
+  overflow: hidden;
+}
+
+.view-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  min-width: 0; /* Ensures full width layout flexibility */
+  width: 100%;
+}
+
+/* Floating Action Button Styling */
+.sidebar-global-toggle {
+  position: fixed;
+  top: 13px;
+  left: 215px; /* Aligned right next to default sidebar text labels */
+  z-index: 999;
+  background: #2a2e39;
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Move the button cleanly to the top-left corner when sidebar is gone */
+.sidebar-hidden .sidebar-global-toggle {
+  left: 15px;
+}
+
+/* Helper Clean up for custom sign-out */
+.signout-link-btn {
+  background: none;
+  border: none;
+  color: #ff4d4d;
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: left;
+  text-decoration: underline;
+}

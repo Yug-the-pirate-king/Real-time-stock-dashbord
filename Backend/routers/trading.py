@@ -5,6 +5,10 @@ import yfinance as yf
 import requests
 from cachetools import TTLCache, cached
 import concurrent.futures
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Import the shared database connector and your structural model blueprints
 from database import SessionLocal
@@ -14,10 +18,97 @@ from models.trading import Portfolio, TransactionHistory
 # Define the router ONCE
 router = APIRouter(prefix="/trade", tags=["Trading Operations"])
 
+# Exchange Rate API configuration
+EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY", "")
+EXCHANGE_RATE_API_URL = "https://v6.exchangerate-api.com/v6/{key}/latest"
+
 # Global caches to prevent rate limiting and optimize performance
 query_cache = TTLCache(maxsize=500, ttl=60) 
 price_cache = TTLCache(maxsize=1000, ttl=30)
 market_cache = TTLCache(maxsize=1, ttl=30) # Caches the watchlist dashboard for 30 seconds
+exchange_rate_cache = TTLCache(maxsize=50, ttl=3600)  # Cache exchange rates for 1 hour
+
+# ==========================================
+# CURRENCY DETECTION & CONVERSION
+# ==========================================
+
+def detect_currency_from_ticker(ticker: str) -> str:
+    """Detect currency based on ticker suffix/exchange"""
+    ticker = ticker.upper()
+    
+    # Indian exchanges
+    if ticker.endswith(('.NS', '.BO')):
+        return 'INR'
+    # Canadian exchange
+    elif ticker.endswith('.TO'):
+        return 'CAD'
+    # London exchange
+    elif ticker.endswith('.L'):
+        return 'GBP'
+    # Tokyo exchange
+    elif ticker.endswith('.T'):
+        return 'JPY'
+    # Hong Kong exchange
+    elif ticker.endswith('.HK'):
+        return 'HKD'
+    # Shanghai/Shenzhen
+    elif ticker.endswith(('.SS', '.SZ')):
+        return 'CNY'
+    # Australia
+    elif ticker.endswith('.AX'):
+        return 'AUD'
+    # Singapore
+    elif ticker.endswith('.SI'):
+        return 'SGD'
+    # Mexico
+    elif ticker.endswith('.MX'):
+        return 'MXN'
+    # Brazil
+    elif ticker.endswith('.SA'):
+        return 'BRL'
+    # Default to USD for US exchanges
+    else:
+        return 'USD'
+
+def get_exchange_rate(from_currency: str, to_currency: str = 'USD') -> float:
+    """Fetch exchange rate with caching"""
+    if from_currency == to_currency:
+        return 1.0
+    
+    cache_key = f"{from_currency}_{to_currency}"
+    
+    # Check cache first
+    if cache_key in exchange_rate_cache:
+        return exchange_rate_cache[cache_key]
+    
+    if not EXCHANGE_RATE_API_KEY:
+        print(f"Warning: EXCHANGE_RATE_API_KEY not set. Using 1:1 conversion for {from_currency} to {to_currency}")
+        return 1.0
+    
+    try:
+        url = EXCHANGE_RATE_API_URL.format(key=EXCHANGE_RATE_API_KEY)
+        params = {'base': from_currency}
+        response = requests.get(url + f"/{from_currency}", timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if 'conversion_rates' in data:
+                rate = data['conversion_rates'].get(to_currency, 1.0)
+                exchange_rate_cache[cache_key] = rate
+                return rate
+    except Exception as e:
+        print(f"Error fetching exchange rate for {from_currency}/{to_currency}: {e}")
+    
+    return 1.0
+
+def convert_to_usd(price: float, ticker: str) -> float:
+    """Convert price to USD based on ticker's currency"""
+    currency = detect_currency_from_ticker(ticker)
+    if currency == 'USD':
+        return price
+    
+    rate = get_exchange_rate(currency, 'USD')
+    return price * rate
 
 # Database connection helper
 def get_db():
@@ -59,6 +150,9 @@ def buy_stock(
         
     # FIXED: Explicitly cast to native standard Python float to prevent NumPy schema compilation errors
     current_price = float(data['Close'].iloc[-1])
+    
+    # Convert to USD if stock is from another country
+    current_price = convert_to_usd(current_price, ticker)
     
     # Financial math check
     total_cost = current_price * quantity
@@ -127,6 +221,9 @@ def sell_stock(
         
     # FIXED: Explicitly cast to native standard Python float to prevent NumPy schema compilation errors
     current_price = float(data['Close'].iloc[-1])
+    
+    # Convert to USD if stock is from another country
+    current_price = convert_to_usd(current_price, ticker)
     
     # Financial math calculation
     total_revenue = current_price * quantity
@@ -197,7 +294,12 @@ def get_real_market_data():
             fast_info = ticker_obj.fast_info
             
             current_price = fast_info.last_price
+            # Convert to USD if stock is from another country
+            current_price = convert_to_usd(current_price, ticker_symbol)
             prev_close = fast_info.previous_close
+            # Also convert prev_close for accurate percentage change
+            if prev_close:
+                prev_close = convert_to_usd(prev_close, ticker_symbol)
             
             if prev_close and prev_close > 0:
                 change_percent = ((current_price - prev_close) / prev_close) * 100
@@ -237,6 +339,11 @@ def fetch_price_data(quote):
         
         if not current_price:
             return None
+        
+        # Convert to USD if stock is from another country
+        current_price = convert_to_usd(current_price, ticker_symbol)
+        if prev_close:
+            prev_close = convert_to_usd(prev_close, ticker_symbol)
             
         change_str = "0.00%"
         if prev_close and prev_close > 0:

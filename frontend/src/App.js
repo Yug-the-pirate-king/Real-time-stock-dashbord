@@ -13,21 +13,21 @@ const VIEWS = [
 ];
 
 export default function App() {
-  // 1. Initialize user state from localStorage if it exists
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('trader_user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  // 2. Automatically skip landing/auth phases if a user is already cached
   const [phase, setPhase] = useState(() => {
     const savedUser = localStorage.getItem('trader_user');
     return savedUser ? 'app' : 'landing';
   });
 
   const [view, setView] = useState('trading-desk');
+  
+  // Track completely open/collapsed state
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // 3. Helper to handle manual sign-outs cleanly
   const handleLogout = (e) => {
     e.preventDefault();
     localStorage.removeItem('trader_user');
@@ -40,7 +40,6 @@ export default function App() {
   if (phase === 'auth') return (
     <Login 
       onLoginSuccess={u => { 
-        // Save to cache on successful sign-in
         localStorage.setItem('trader_user', JSON.stringify(u));
         setUser(u); 
         setPhase('app'); 
@@ -51,52 +50,52 @@ export default function App() {
   const activeLabel = VIEWS.find(v => v.id === view)?.label;
 
   return (
-    <div className="desk-wrapper">
+    <div className={`desk-wrapper ${isCollapsed ? 'sidebar-hidden' : ''}`}>
+      
+      {/* Floating Toggle Button: Stays visible at the edge of the viewport when sidebar is gone */}
+      <button 
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="sidebar-global-toggle"
+        title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+      >
+        {isCollapsed ? '➔' : '✕'}
+      </button>
 
-      <aside className="sidebar">
-        {/* Changed href from "landingPage" to preventing accidental reloads */}
-        <a className="sidebar-logo" href="#" onClick={(e) => e.preventDefault()}>
-          <span className="logo-dot" />
-          StockPulse
-        </a>
+      <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-content-wrapper">
+          <a className="sidebar-logo" href="#" onClick={(e) => e.preventDefault()}>
+            <span className="logo-dot" />
+            StockPulse
+          </a>
 
-        <span className="nav-section-label">Navigation</span>
+          <span className="nav-section-label">Navigation</span>
 
-        {VIEWS.map(v => (
-          <button
-            key={v.id}
-            className={`side-btn${view === v.id ? ' active' : ''}`}
-            onClick={() => setView(v.id)}
-          >
-            {v.label}
-          </button>
-        ))}
+          {VIEWS.map(v => (
+            <button
+              key={v.id}
+              className={`side-btn${view === v.id ? ' active' : ''}`}
+              onClick={() => setView(v.id)}
+            >
+              {v.label}
+            </button>
+          ))}
 
-        <div className="sidebar-user">
-          <p className="user-label">Logged in as</p>
-          <p className="user-name">{user?.username || 'Trader'}</p>
-          <button 
-            onClick={handleLogout}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#ff4d4d',
-              cursor: 'pointer',
-              padding: '0',
-              fontSize: '12px',
-              marginTop: '5px',
-              textAlign: 'left',
-              textDecoration: 'underline'
-            }}
-          >
-            Sign Out
-          </button>
+          <div className="sidebar-user">
+            <p className="user-label">Logged in as</p>
+            <p className="user-name">{user?.username || 'Trader'}</p>
+            <button onClick={handleLogout} className="signout-link-btn">
+              Sign Out
+            </button>
+          </div>
         </div>
       </aside>
 
       <div className="main-wrap">
         <header className="topbar">
-          <span className="topbar-title">{activeLabel}</span>
+          {/* Margin adjusts dynamically to not hide behind the floating button */}
+          <span className="topbar-title" style={{ marginLeft: isCollapsed ? '45px' : '0px' }}>
+            {activeLabel}
+          </span>
           <div className="topbar-status">
             <span className="status-dot" />
             <span className="status-text">Markets open</span>
@@ -104,7 +103,6 @@ export default function App() {
         </header>
 
         <main className="view-content">
-          {/* setUser is safely wired up here now */}
           {view === 'trading-desk' && <TradingDesk user={user} setUser={setUser} />}
           {view === 'news-feed'    && <NewsFeed    user={user} />}
           {view === 'ai-model'     && <AiModel     user={user} />}
