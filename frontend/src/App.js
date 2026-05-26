@@ -5,6 +5,8 @@ import TradingDesk from './pages/TradingDesk';
 import NewsFeed from './pages/NewsFeed';
 import AiModel from './pages/Ai_model';
 import './styles/global.css';
+import { GoSidebarExpand } from "react-icons/go";
+import { GoSidebarCollapse } from "react-icons/go";
 
 const VIEWS = [
   { id: 'trading-desk', label: 'Trading Desk' },
@@ -58,7 +60,7 @@ export default function App() {
         className="sidebar-global-toggle"
         title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
       >
-        {isCollapsed ? '➔' : '✕'}
+        {isCollapsed ? <GoSidebarCollapse /> : <GoSidebarExpand />}
       </button>
 
       <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
