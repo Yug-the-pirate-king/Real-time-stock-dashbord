@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '../config/api';
 import '../styles/trading-desk-new.css';
 import Chart from 'chart.js/auto';
+import { MdOutlineSavings } from "react-icons/md";
+import { SiCardmarket } from "react-icons/si";
+import { FaSearchDollar, FaHistory } from "react-icons/fa";
 
 export default function TradingDesk({ user, setUser }) {
   const [activeTab, setActiveTab] = useState('depot');
@@ -29,6 +32,10 @@ export default function TradingDesk({ user, setUser }) {
   useEffect(() => {
     if (user?.id) {
       fetchUserPortfolio();
+      
+      // Auto-refresh portfolio prices every 30 seconds
+      const interval = setInterval(fetchUserPortfolio, 30000);
+      return () => clearInterval(interval);
     }
   }, [user?.id]);
 
@@ -49,14 +56,29 @@ export default function TradingDesk({ user, setUser }) {
       // FIXED: Force user.id to be evaluated explicitly as a String parameter
       const safeUserId = String(user.id);
       
-      const [portRes, histRes] = await Promise.all([
+      const [portRes, histRes, pricesRes] = await Promise.all([
         fetch(`${API_BASE_URL}/trade/portfolio/${safeUserId}`),
-        fetch(`${API_BASE_URL}/trade/history/${safeUserId}`)
+        fetch(`${API_BASE_URL}/trade/history/${safeUserId}`),
+        fetch(`${API_BASE_URL}/trade/portfolio-prices/${safeUserId}`)
       ]);
       const portData = await portRes.json();
       const histData = await histRes.json();
+      const pricesData = await pricesRes.json();
+      
       setPortfolio(Array.isArray(portData) ? portData : []);
       setTransactionHistory(Array.isArray(histData) ? histData : []);
+      
+      // Convert portfolio prices to market stock format for live price display
+      const portfolioPrices = Array.isArray(pricesData) ? pricesData.map(item => ({
+        ticker: item.ticker,
+        name: item.ticker,
+        price: item.price,
+        change: item.change,
+        icon: "📈",
+        category: "Portfolio"
+      })) : [];
+      
+      setMarketStocks(portfolioPrices);
     } catch (err) {
       console.error('Failed to fetch user data:', err);
     }
@@ -181,47 +203,30 @@ export default function TradingDesk({ user, setUser }) {
 
   return (
     <div className="td-shell">
-      <div className="td-header">
-        <div className="td-logo">
-          Stock <span>Pulse</span>
-        </div>
-        <div className="td-hdr-right">
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            <span className="td-live-dot"></span>Live Market
-          </span>
-          <button className="td-refresh-btn" onClick={loadMarketData}>
-            ↻ Refresh
-          </button>
-          <div className="td-balance-pill">
-            Cash: ${user?.balance?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
-          </div>
-        </div>
-      </div>
-
       <div className="td-tabs">
         <button
           className={`td-tab ${activeTab === 'depot' ? 'active' : ''}`}
           onClick={() => setActiveTab('depot')}
         >
-          📊 My Depot
+          <MdOutlineSavings /> My Depot
         </button>
         <button
           className={`td-tab ${activeTab === 'market' ? 'active' : ''}`}
           onClick={() => setActiveTab('market')}
         >
-          📈 Market
+          <SiCardmarket /> Market
         </button>
         <button
           className={`td-tab ${activeTab === 'search' ? 'active' : ''}`}
           onClick={() => setActiveTab('search')}
         >
-          🔍 Search
+          <FaSearchDollar /> Search
         </button>
         <button
           className={`td-tab ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
-          📋 History
+          <FaHistory /> History
         </button>
       </div>
 

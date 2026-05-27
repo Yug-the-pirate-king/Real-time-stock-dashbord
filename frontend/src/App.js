@@ -98,10 +98,19 @@ export default function App() {
           <span className="topbar-title" style={{ marginLeft: isCollapsed ? '45px' : '0px' }}>
             {activeLabel}
           </span>
-          <div className="topbar-status">
-            <span className="status-dot" />
-            <span className="status-text">Markets open</span>
+          <div className="td-header">
+        <div className="td-hdr-right">
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            <span className="td-live-dot"></span>Live Market
+          </span>
+          <button className="td-refresh-btn" onClick={() => window.location.reload()}>
+            ↻ Refresh
+          </button>
+          <div className="td-balance-pill">
+            Cash: ${user?.balance?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
           </div>
+        </div>
+      </div>
         </header>
 
         <main className="view-content">

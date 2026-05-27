@@ -397,3 +397,71 @@ def search_global_stocks(query: str = Query(..., min_length=3)):
     except Exception as e:
         print(f"Search failed for '{query}': {e}")
         return []
+
+
+# ==========================================
+# 6. PORTFOLIO LIVE PRICES (For Dynamic Updates)
+# ==========================================
+@router.get("/portfolio-prices/{user_id}")
+def get_portfolio_live_prices(user_id: str, db: Session = Depends(get_db)):
+    """Fetch live prices for all stocks in user's portfolio."""
+    try:
+        user_big_id = int(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="user_id must be a valid integer.")
+    
+    # Get all portfolio items for this user
+    portfolio_items = db.query(Portfolio).filter(Portfolio.user_id == user_big_id).all()
+    
+    if not portfolio_items:
+        return []
+    
+    portfolio_prices = []
+    tickers = [item.ticker for item in portfolio_items]
+    tickers_string = " ".join(tickers)
+    
+    try:
+        yf_tickers = yf.Tickers(tickers_string)
+        
+        for item in portfolio_items:
+            try:
+                ticker_obj = yf_tickers.tickers[item.ticker]
+                fast_info = ticker_obj.fast_info
+                
+                current_price = fast_info.last_price
+                # Convert to USD if stock is from another country
+                current_price = convert_to_usd(current_price, item.ticker)
+                prev_close = fast_info.previous_close
+                
+                if prev_close:
+                    prev_close = convert_to_usd(prev_close, item.ticker)
+                    if prev_close > 0:
+                        change_percent = ((current_price - prev_close) / prev_close) * 100
+                        change_str = f"+{change_percent:.2f}%" if change_percent >= 0 else f"{change_percent:.2f}%"
+                    else:
+                        change_str = "0.00%"
+                else:
+                    change_str = "0.00%"
+                
+                portfolio_prices.append({
+                    "ticker": item.ticker,
+                    "price": round(current_price, 2),
+                    "change": change_str,
+                    "shares_owned": item.shares_owned,
+                    "average_buy_price": round(item.average_buy_price, 2)
+                })
+            except Exception as e:
+                print(f"Failed to fetch price for {item.ticker}: {e}")
+                # Return cached/average price if live fetch fails
+                portfolio_prices.append({
+                    "ticker": item.ticker,
+                    "price": round(item.average_buy_price, 2),
+                    "change": "0.00%",
+                    "shares_owned": item.shares_owned,
+                    "average_buy_price": round(item.average_buy_price, 2)
+                })
+        
+        return portfolio_prices
+    except Exception as e:
+        print(f"Error fetching portfolio prices: {e}")
+        return []
