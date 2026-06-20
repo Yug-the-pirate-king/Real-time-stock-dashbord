@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import engine, Base
+from database import init_db
 
-# 1. Import your routers FIRST (this loads your new models into memory)
-from routers import auth, trading 
+# Import your routers FIRST (this loads your new models into memory)
+from routers import auth, trading
 
-# 2. Tell SQLite to generate all the tables NOW (after they are loaded)
-Base.metadata.create_all(bind=engine)
+# Initialize DB + run any lightweight migrations
+init_db()
 
 app = FastAPI(title="Scalable Stock Simulator Engine")
 

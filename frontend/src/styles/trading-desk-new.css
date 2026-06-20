@@ -419,11 +419,13 @@
   border: 0.5px solid var(--border);
   border-radius: var(--radius);
   padding: 16px;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, transform 0.15s;
+  cursor: pointer;
 }
 
 .td-pos-card:hover {
   border-color: var(--border-strong);
+  transform: translateY(-1px);
 }
 
 .td-pos-ticker {
@@ -568,4 +570,277 @@
 .td-chart-controls button {
   font-size: 11px;
   padding: 4px 10px;
+}
+
+/* ─── Clickable Row ─────────────────────────────────── */
+.td-mrow-left { cursor: pointer; }
+
+/* ─── Receipt Banner ────────────────────────────────── */
+.td-receipt-banner {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  animation: slideDown 0.35s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.td-receipt-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.td-receipt-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  color: #fff;
+  background: var(--green);
+}
+
+.td-receipt-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.td-receipt-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.td-receipt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.td-receipt-cell {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.td-receipt-cell span {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.td-receipt-cell strong {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+}
+
+/* ─── Detail Modal Metrics ──────────────────────────── */
+.td-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.td-metric-cell {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.td-metric-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.td-metric-value {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+}
+
+/* ─── Period Buttons ────────────────────────────────── */
+.td-period-btn {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.15s;
+}
+
+.td-period-btn:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.td-period-btn.active {
+  background: var(--text);
+  color: #fff;
+  border-color: var(--text);
+}
+
+/* ─── Toast Notifications ───────────────────────────── */
+.td-toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.td-toast {
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  animation: slideIn 0.3s ease;
+  max-width: 280px;
+}
+
+.td-toast-success { background: var(--green); }
+.td-toast-error   { background: var(--red); }
+.td-toast-info    { background: var(--navy); }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+/* ─── Detail Modal ──────────────────────────────────── */
+.td-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.td-modal {
+  background: var(--bg);
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border);
+  width: 100%;
+  max-width: 640px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+}
+
+.td-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.td-modal-ticker {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.td-modal-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.td-modal-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.td-modal-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.td-badge-currency {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-sec);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.td-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ─── Info Button ───────────────────────────────────── */
+.td-btn-info {
+  height: 34px;
+  width: 34px;
+  padding: 0;
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.td-btn-info:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+/* ─── Responsive Modal ────────────────────────────────── */
+@media (max-width: 680px) {
+  .td-modal { padding: 16px; max-height: 90vh; }
+  .td-stat-row { grid-template-columns: 1fr 1fr; }
+  .td-portfolio-grid { grid-template-columns: 1fr; }
 }

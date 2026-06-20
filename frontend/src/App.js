@@ -5,13 +5,15 @@ import TradingDesk from './pages/TradingDesk';
 import NewsFeed from './pages/NewsFeed';
 import AiModel from './pages/Ai_model';
 import './styles/global.css';
-import { GoSidebarExpand } from "react-icons/go";
-import { GoSidebarCollapse } from "react-icons/go";
+import { GoSidebarExpand, GoSidebarCollapse } from "react-icons/go";
+import { AiOutlineStock } from "react-icons/ai";
+import { FaBrain } from "react-icons/fa";
+import { FaRegNewspaper } from "react-icons/fa";
 
 const VIEWS = [
-  { id: 'trading-desk', label: 'Trading Desk' },
-  { id: 'news-feed',    label: 'News Feed'    },
-  { id: 'ai-model',     label: 'AI Predictions'},
+  { id: 'trading-desk', label: 'Trading Desk', icon: AiOutlineStock },
+  { id: 'news-feed',    label: 'News Feed',    icon: FaRegNewspaper },
+  { id: 'ai-model',     label: 'AI Signals',   icon: FaBrain },
 ];
 
 export default function App() {
@@ -26,8 +28,6 @@ export default function App() {
   });
 
   const [view, setView] = useState('trading-desk');
-  
-  // Track completely open/collapsed state
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = (e) => {
@@ -38,27 +38,26 @@ export default function App() {
   };
 
   if (phase === 'landing') return <LandingPage onStart={() => setPhase('auth')} />;
-  
+
   if (phase === 'auth') return (
-    <Login 
-      onLoginSuccess={u => { 
+    <Login
+      onLoginSuccess={u => {
         localStorage.setItem('trader_user', JSON.stringify(u));
-        setUser(u); 
-        setPhase('app'); 
-      }} 
+        setUser(u);
+        setPhase('app');
+      }}
     />
   );
 
-  const activeLabel = VIEWS.find(v => v.id === view)?.label;
+  const activeView = VIEWS.find(v => v.id === view);
+  const activeLabel = activeView?.label;
 
   return (
     <div className={`desk-wrapper ${isCollapsed ? 'sidebar-hidden' : ''}`}>
-      
-      {/* Floating Toggle Button: Stays visible at the edge of the viewport when sidebar is gone */}
-      <button 
+      <button
         onClick={() => setIsCollapsed(!isCollapsed)}
         className="sidebar-global-toggle"
-        title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
       >
         {isCollapsed ? <GoSidebarCollapse /> : <GoSidebarExpand />}
       </button>
@@ -70,23 +69,32 @@ export default function App() {
             StockPulse
           </a>
 
-          <span className="nav-section-label">Navigation</span>
+          <span className="nav-section-label">Workspace</span>
 
-          {VIEWS.map(v => (
-            <button
-              key={v.id}
-              className={`side-btn${view === v.id ? ' active' : ''}`}
-              onClick={() => setView(v.id)}
-            >
-              {v.label}
-            </button>
-          ))}
+          {VIEWS.map(v => {
+            const Icon = v.icon;
+            return (
+              <button
+                key={v.id}
+                className={`side-btn${view === v.id ? ' active' : ''}`}
+                onClick={() => setView(v.id)}
+              >
+                <Icon style={{ fontSize: '17px' }} />
+                {v.label}
+              </button>
+            );
+          })}
 
           <div className="sidebar-user">
-            <p className="user-label">Logged in as</p>
-            <p className="user-name">{user?.username || 'Trader'}</p>
+            <div className="sidebar-user-top">
+              <div className="user-avatar">{user?.username?.charAt(0)?.toUpperCase() || 'T'}</div>
+              <div>
+                <p className="user-label">Operator</p>
+                <p className="user-name">{user?.username || 'Trader'}</p>
+              </div>
+            </div>
             <button onClick={handleLogout} className="signout-link-btn">
-              Sign Out
+              Disconnect Session
             </button>
           </div>
         </div>
@@ -94,23 +102,26 @@ export default function App() {
 
       <div className="main-wrap">
         <header className="topbar">
-          {/* Margin adjusts dynamically to not hide behind the floating button */}
-          <span className="topbar-title" style={{ marginLeft: isCollapsed ? '45px' : '0px' }}>
-            {activeLabel}
-          </span>
-          <div className="td-header">
-        <div className="td-hdr-right">
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            <span className="td-live-dot"></span>Live Market
-          </span>
-          <button className="td-refresh-btn" onClick={() => window.location.reload()}>
-            ↻ Refresh
-          </button>
-          <div className="td-balance-pill">
-            Cash: ${user?.balance?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
+          <div className="topbar-left">
+            <span className="topbar-title" style={{ marginLeft: isCollapsed ? '45px' : '0px' }}>
+              {activeLabel}
+            </span>
           </div>
-        </div>
-      </div>
+          <div className="topbar-right">
+            <span className="topbar-live-badge">
+              <span className="topbar-live-dot" />
+              Live Market
+            </span>
+            <button className="topbar-refresh-btn" onClick={() => window.location.reload()} title="Refresh">
+              ↻
+            </button>
+            <div className="topbar-balance-pill">
+              <span className="topbar-balance-label">Balance</span>
+              <span className="topbar-balance-value">
+                ${user?.balance?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '0.00'}
+              </span>
+            </div>
+          </div>
         </header>
 
         <main className="view-content">
@@ -119,7 +130,6 @@ export default function App() {
           {view === 'ai-model'     && <AiModel     user={user} />}
         </main>
       </div>
-
     </div>
   );
 }

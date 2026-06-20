@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from dotenv import load_dotenv
@@ -16,7 +16,7 @@ if DATABASE_URL:
     # 2. Convert postgres standard schema to cockroachdb dialect
     if DATABASE_URL.startswith("postgresql://"):
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "cockroachdb://", 1)
-        
+
     # 3. Create the database engine passing the secure sslmode flag explicitly
     engine = create_engine(
         DATABASE_URL,
@@ -37,3 +37,49 @@ Base = declarative_base()
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    run_migrations()
+
+
+def _sqlite_column_exists(table_name: str, column_name: str) -> bool:
+    """Check if a column exists in a SQLite table."""
+    with engine.connect() as conn:
+        result = conn.execute(text(f"PRAGMA table_info({table_name})"))
+        rows = result.fetchall()
+        return any(row[1] == column_name for row in rows)
+
+
+def run_migrations():
+    """ lightweight migration runner: adds columns that are missing from older db files."""
+    inspector = inspect(engine)
+
+    # Portfolio migrations
+    if inspector.has_table("portfolios"):
+        portfolio_cols = [c["name"] for c in inspector.get_columns("portfolios")]
+        additions = {
+            "currency": "VARCHAR",
+            "country": "VARCHAR",
+            "original_avg_buy_price": "FLOAT",
+            "last_exchange_rate": "FLOAT",
+            "total_cost_basis_usd": "FLOAT",
+            "exchange": "VARCHAR",
+        }
+        for col, dtype in additions.items():
+            if col not in portfolio_cols:
+                with engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE portfolios ADD COLUMN {col} {dtype}"))
+
+    # Transaction history migrations
+    if inspector.has_table("transaction_history"):
+        txn_cols = [c["name"] for c in inspector.get_columns("transaction_history")]
+        additions = {
+            "currency": "VARCHAR",
+            "country": "VARCHAR",
+            "original_price_per_share": "FLOAT",
+            "exchange_rate_used": "FLOAT",
+            "total_value_usd": "FLOAT",
+            "exchange": "VARCHAR",
+        }
+        for col, dtype in additions.items():
+            if col not in txn_cols:
+                with engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE transaction_history ADD COLUMN {col} {dtype}"))
