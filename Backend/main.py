@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import init_db
 
 # Import your routers FIRST (this loads your new models into memory)
-from routers import auth, trading
+from routers import auth, trading, finance_monitor
 
 # Initialize DB + run any lightweight migrations
 init_db()
@@ -16,6 +16,8 @@ origins = [
     "https://stock-simulator-predictor-ipx1c0929.vercel.app", # The specific Vercel preview deployment
     "http://localhost:3000",                                 # Local development fallback
     "http://127.0.0.1:3000",
+    "http://localhost",                                      # Docker nginx frontend
+    "http://127.0.0.1",
 ]
 
 app.add_middleware(
@@ -29,6 +31,7 @@ app.add_middleware(
 # PLUG IN THE ROUTERS
 app.include_router(auth.router)
 app.include_router(trading.router)
+app.include_router(finance_monitor.router)
 
 @app.get("/")
 def home():

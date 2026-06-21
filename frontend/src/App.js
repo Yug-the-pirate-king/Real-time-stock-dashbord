@@ -12,7 +12,7 @@ import { FaRegNewspaper } from "react-icons/fa";
 
 const VIEWS = [
   { id: 'trading-desk', label: 'Trading Desk', icon: AiOutlineStock },
-  { id: 'news-feed',    label: 'News Feed',    icon: FaRegNewspaper },
+  { id: 'news-feed',    label: 'Finance Monitor',    icon: FaRegNewspaper },
   { id: 'ai-model',     label: 'AI Signals',   icon: FaBrain },
 ];
 

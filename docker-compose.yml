@@ -1,0 +1,57 @@
+# ─── StockPulse Docker Compose ─────────────────────────────
+# Run the entire app (backend + frontend) with one command:
+#
+#   docker compose up --build
+#
+# Then open http://localhost in your browser.
+#
+# Services:
+#   - frontend: React SPA served by nginx on port 80
+#   - backend:  FastAPI + uvicorn on port 8000
+#
+# The frontend uses http://127.0.0.1:8000 for API calls.
+# Both ports are published to the host so the browser can reach them.
+#
+# If you want to clean up:
+#   docker compose down
+#
+# If you want to wipe DB and start fresh:
+#   docker compose down -v
+# ────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: stockpulse-backend
+    ports:
+      - "8000:8000"
+    # Persist SQLite DB across restarts
+    volumes:
+      - stockpulse-db:/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stockpulse-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  stockpulse-db:
+    driver: local
