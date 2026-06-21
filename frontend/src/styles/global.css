@@ -1456,3 +1456,72 @@ body {
   font-size: 13px;
   color: var(--gray-700);
 }
+
+/* ─── Finance Map ────────────────────────────────────── */
+.map-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.finance-map {
+  width: 100%;
+  height: 520px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-100);
+  overflow: hidden;
+  background: var(--white);
+  position: relative;
+}
+
+.map-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-md);
+  width: fit-content;
+}
+
+.map-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.map-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--gray-100);
+}
+
+.map-legend-label {
+  font-weight: 500;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  border: 1px solid var(--gray-100);
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: var(--gray-300);
+  font-size: 18px;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: var(--black);
+}

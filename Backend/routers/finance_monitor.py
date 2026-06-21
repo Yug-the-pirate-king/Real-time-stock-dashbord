@@ -255,6 +255,47 @@ def get_daily_brief():
     return brief
 
 
+@router.get("/geo")
+def get_finance_geo():
+    """Return all finance geo-located entities (exchanges + central banks) for map plotting."""
+    geo_points = []
+    for ex in STOCK_EXCHANGES:
+        geo_points.append(
+            {
+                "id": ex["id"],
+                "type": "exchange",
+                "name": ex["name"],
+                "shortName": ex.get("shortName", ""),
+                "city": ex.get("city", ""),
+                "country": ex.get("country", ""),
+                "lat": ex.get("lat"),
+                "lon": ex.get("lon"),
+                "tier": ex.get("tier"),
+                "marketCap": ex.get("marketCap"),
+                "tradingHours": ex.get("tradingHours"),
+                "timezone": ex.get("timezone"),
+                "description": ex.get("description", ""),
+            }
+        )
+    for bank in CENTRAL_BANKS:
+        geo_points.append(
+            {
+                "id": bank["id"],
+                "type": "central_bank",
+                "name": bank["name"],
+                "shortName": bank.get("shortName", ""),
+                "city": bank.get("city", ""),
+                "country": bank.get("country", ""),
+                "lat": bank.get("lat"),
+                "lon": bank.get("lon"),
+                "bankType": bank.get("type"),
+                "currency": bank.get("currency"),
+                "description": bank.get("description", ""),
+            }
+        )
+    return geo_points
+
+
 @router.get("/alerts")
 def get_breaking_alerts(threshold: float = Query(2.5)):
     """Return tickers with intraday moves exceeding the threshold %."""

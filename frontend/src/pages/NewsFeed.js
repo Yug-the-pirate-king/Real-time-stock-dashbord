@@ -6,7 +6,9 @@ import {
   FaUniversity,
   FaBullhorn,
   FaFileAlt,
+  FaMapMarkedAlt,
 } from 'react-icons/fa';
+import FinanceMap from '../components/FinanceMap';
 
 export default function FinanceMonitor({ user }) {
   const [tab, setTab] = useState('news');
@@ -35,6 +37,7 @@ export default function FinanceMonitor({ user }) {
 
   const tabs = [
     { id: 'news', label: 'Market News', icon: FaNewspaper },
+    { id: 'map', label: 'Map', icon: FaMapMarkedAlt },
     { id: 'exchanges', label: 'Exchanges', icon: FaGlobe },
     { id: 'banks', label: 'Central Banks', icon: FaUniversity },
     { id: 'brief', label: 'Daily Brief', icon: FaFileAlt },
@@ -187,6 +190,8 @@ export default function FinanceMonitor({ user }) {
           )}
         </div>
       )}
+
+      {tab === 'map' && <FinanceMap />}
 
       {tab === 'exchanges' && (
         <div>
