@@ -9,21 +9,19 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
-    # 1. Strip any native parameters to pass a pristine path to the adapter
-    if "?" in DATABASE_URL:
-        DATABASE_URL = DATABASE_URL.split("?")[0]
+    # Ensure the URL uses the postgresql:// scheme for psycopg2 / SQLAlchemy
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-    # 2. Convert postgres standard schema to cockroachdb dialect
-    if DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "cockroachdb://", 1)
+    # Append sslmode=require if not already present (required by Supabase)
+    if "sslmode" not in DATABASE_URL:
+        sep = "&" if "?" in DATABASE_URL else "?"
+        DATABASE_URL = f"{DATABASE_URL}{sep}sslmode=require"
 
-    # 3. Create the database engine passing the secure sslmode flag explicitly
     engine = create_engine(
         DATABASE_URL,
-        connect_args={
-            "sslmode": "require"
-        },
-        echo=False
+        pool_pre_ping=True,   # detect stale connections automatically
+        echo=False,
     )
 else:
     # Local fallback file architecture
