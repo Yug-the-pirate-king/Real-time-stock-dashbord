@@ -1,211 +1,43 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-import yfinance as yf
-import requests
-from cachetools import TTLCache, cached
-import concurrent.futures
-import os
-from dotenv import load_dotenv
 from typing import Optional
 
-load_dotenv()
-
-from database import SessionLocal
+from core.db import get_db, SessionLocal
+from core.config import get_settings
+from core.logging import get_logger
 from models.auth import User
 from models.trading import Portfolio, TransactionHistory
+from services.market_data import get_provider, COUNTRY_FLAGS, YFinanceProvider
 
 router = APIRouter(prefix="/trade", tags=["Trading Operations"])
-
-EXCHANGE_RATE_API_KEY = os.getenv("EXCHANGE_RATE_API_KEY", "")
-EXCHANGE_RATE_API_URL = "https://v6.exchangerate-api.com/v6/{key}/latest/{from_currency}"
-FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "d87v551r01qmhakhgmd0d87v551r01qmhakhgmdg")
-
-# Global caches
-query_cache = TTLCache(maxsize=500, ttl=60)
-price_cache = TTLCache(maxsize=1000, ttl=30)
-market_cache = TTLCache(maxsize=1, ttl=30)
-exchange_rate_cache = TTLCache(maxsize=50, ttl=3600)
-stock_info_cache = TTLCache(maxsize=200, ttl=300)
-
-# ==========================================
-# COUNTRY & CURRENCY DETECTION
-# ==========================================
-
-TICKER_SUFFIX_MAP = {
-    ".NS": ("INR", "IN"), ".BO": ("INR", "IN"),
-    ".TO": ("CAD", "CA"), ".V": ("CAD", "CA"),
-    ".L": ("GBP", "GB"),
-    ".T": ("JPY", "JP"), ".TYO": ("JPY", "JP"),
-    ".HK": ("HKD", "HK"),
-    ".SS": ("CNY", "CN"), ".SZ": ("CNY", "CN"),
-    ".AX": ("AUD", "AU"),
-    ".SI": ("SGD", "SG"),
-    ".MX": ("MXN", "MX"),
-    ".SA": ("BRL", "BR"),
-    ".F": ("EUR", "DE"), ".DE": ("EUR", "DE"),
-    ".PA": ("EUR", "FR"), ".MC": ("EUR", "ES"),
-    ".AS": ("EUR", "NL"), ".MI": ("EUR", "IT"),
-    ".SW": ("CHF", "CH"), ".ST": ("SEK", "SE"),
-    ".CO": ("DKK", "DK"), ".HE": ("EUR", "FI"),
-    ".KS": ("KRW", "KR"), ".KQ": ("KRW", "KR"),
-    ".TW": ("TWD", "TW"),
-    ".JK": ("IDR", "ID"),
-}
-
-COUNTRY_FLAGS = {
-    "US": "🇺🇸", "IN": "🇮🇳", "CA": "🇨🇦", "GB": "🇬🇧", "JP": "🇯🇵",
-    "HK": "🇭🇰", "CN": "🇨🇳", "AU": "🇦🇺", "SG": "🇸🇬", "MX": "🇲🇽",
-    "BR": "🇧🇷", "DE": "🇩🇪", "FR": "🇫🇷", "ES": "🇪🇸", "NL": "🇳🇱",
-    "IT": "🇮🇹", "CH": "🇨🇭", "SE": "🇸🇪", "DK": "🇩🇰", "FI": "🇫🇮",
-    "KR": "🇰🇷", "TW": "🇹🇼", "ID": "🇮🇩", "RU": "🇷🇺", "ZA": "🇿🇦",
-}
+logger = get_logger(__name__)
+settings = get_settings()
+provider = get_provider()
 
 
-def detect_currency_and_country(ticker: str) -> tuple[str, str]:
-    """Detect (currency, country_code) from ticker suffix. Falls back to yfinance .info if ambiguous."""
-    ticker_up = ticker.upper()
-    for suffix, (curr, cc) in TICKER_SUFFIX_MAP.items():
-        if ticker_up.endswith(suffix):
-            return curr, cc
-    return "USD", "US"
+def _format_change(change_pct: Optional[float]) -> str:
+    if change_pct is None:
+        return "0.00%"
+    return f"+{change_pct:.2f}%" if change_pct >= 0 else f"{change_pct:.2f}%"
 
 
-def enrich_stock_info(ticker: str) -> dict:
-    """Fetch metadata from yfinance with caching. Returns dict with currency, country, sector, name."""
-    cache_key = ticker.upper()
-    if cache_key in stock_info_cache:
-        return stock_info_cache[cache_key]
-
-    detected_curr, detected_cc = detect_currency_and_country(ticker)
-    info = {
-        "currency": detected_curr,
-        "country": detected_cc,
-        "flag": COUNTRY_FLAGS.get(detected_cc, "🌍"),
-        "name": ticker.upper(),
-        "sector": "Unknown",
-        "exchange": "Unknown",
-        "type": "Stock",
+def _quote_to_market_row(quote, ui_data: dict) -> dict:
+    return {
+        "ticker": quote.ticker,
+        "name": quote.name or ui_data.get("name", quote.ticker),
+        "price": round(quote.price, 2),
+        "icon": ui_data.get("icon", quote.flag),
+        "category": ui_data.get("category", quote.sector or "Equity"),
+        "change": _format_change(quote.change_pct),
+        "currency": quote.currency,
+        "country": quote.country,
+        "flag": quote.flag,
+        "exchange": quote.exchange,
     }
 
-    try:
-        t = yf.Ticker(ticker)
-        fast_info = t.fast_info
-        t_info = t.info or {}
-
-        # Override with real data when available
-        info["name"] = t_info.get("longName") or t_info.get("shortName") or fast_info.get("longName", ticker.upper())
-        if "currency" in t_info and t_info["currency"]:
-            info["currency"] = t_info["currency"]
-        if "country" in t_info and t_info["country"]:
-            info["country"] = t_info["country"]
-        if "sector" in t_info:
-            info["sector"] = t_info["sector"]
-        if "exchange" in t_info:
-            info["exchange"] = t_info["exchange"]
-        if "quoteType" in t_info:
-            info["type"] = t_info["quoteType"]
-
-        # Financial metrics (best-effort; not all tickers have them)
-        info["market_cap"] = t_info.get("marketCap")
-        info["pe_trailing"] = t_info.get("trailingPE")
-        info["pe_forward"] = t_info.get("forwardPE")
-        info["dividend_yield"] = t_info.get("dividendYield")
-        info["volume"] = t_info.get("volume") or t_info.get("regularMarketVolume")
-        info["avg_volume"] = t_info.get("averageVolume")
-        info["day_high"] = t_info.get("dayHigh") or t_info.get("regularMarketDayHigh")
-        info["day_low"] = t_info.get("dayLow") or t_info.get("regularMarketDayLow")
-        info["fifty_two_week_high"] = t_info.get("fiftyTwoWeekHigh")
-        info["fifty_two_week_low"] = t_info.get("fiftyTwoWeekLow")
-        info["beta"] = t_info.get("beta")
-        info["eps"] = t_info.get("trailingEps")
-        info["sector"] = t_info.get("sector") or info["sector"]
-        info["industry"] = t_info.get("industry")
-
-        info["flag"] = COUNTRY_FLAGS.get(info["country"], "🌍")
-    except Exception as e:
-        print(f"enrich_stock_info fallback for {ticker}: {e}")
-
-    stock_info_cache[cache_key] = info
-    return info
-
 
 # ==========================================
-# EXCHANGE RATES
-# ==========================================
-
-_hardcoded_fallback_rates = {
-    "USD": 1.0, "INR": 0.012, "CAD": 0.74, "GBP": 1.27, "JPY": 0.0067,
-    "HKD": 0.128, "CNY": 0.138, "AUD": 0.66, "SGD": 0.74, "MXN": 0.059,
-    "BRL": 0.20, "EUR": 1.09, "CHF": 1.12, "SEK": 0.096, "DKK": 0.146,
-    "KRW": 0.00076, "TWD": 0.031, "IDR": 0.000064, "RUB": 0.011, "ZAR": 0.053,
-}
-
-
-def get_exchange_rate(from_currency: str, to_currency: str = "USD") -> float:
-    """Fetch exchange rate with caching and fallback layers."""
-    from_c = from_currency.upper()
-    to_c = to_currency.upper()
-
-    if from_c == to_c:
-        return 1.0
-
-    cache_key = f"{from_c}_{to_c}"
-    if cache_key in exchange_rate_cache:
-        return exchange_rate_cache[cache_key]
-
-    # Layer 1: ExchangeRate-API
-    if EXCHANGE_RATE_API_KEY:
-        try:
-            url = EXCHANGE_RATE_API_URL.format(key=EXCHANGE_RATE_API_KEY, from_currency=from_c)
-            resp = requests.get(url, timeout=5)
-            if resp.status_code == 200:
-                data = resp.json()
-                if data.get("result") == "success" and "conversion_rates" in data:
-                    rate = data["conversion_rates"].get(to_c)
-                    if rate:
-                        exchange_rate_cache[cache_key] = float(rate)
-                        return float(rate)
-        except Exception as e:
-            print(f"ExchangeRate-API failed for {from_c}>{to_c}: {e}")
-
-    # Layer 2: Hardcoded approximate fallback
-    from_rate = _hardcoded_fallback_rates.get(from_c, 1.0)
-    to_rate = _hardcoded_fallback_rates.get(to_c, 1.0)
-    approx = from_rate / to_rate if to_rate else 1.0
-    print(f"Warning: Using approximate rate {from_c}>{to_c} = {approx}")
-    exchange_rate_cache[cache_key] = approx
-    return approx
-
-
-def convert_to_usd(price: float, ticker_or_currency: str) -> float:
-    """Convert price to USD based on ticker or explicit currency string."""
-    if price is None:
-        return 0.0
-    curr = ticker_or_currency.upper()
-    if len(curr) == 3:  # Already a currency code
-        if curr == "USD":
-            return float(price)
-        rate = get_exchange_rate(curr, "USD")
-        return float(price) * rate
-    # Otherwise treat as ticker
-    detected, _ = detect_currency_and_country(curr)
-    if detected == "USD":
-        return float(price)
-    rate = get_exchange_rate(detected, "USD")
-    return float(price) * rate
-
-
-# Database helper
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-# ==========================================
-# 1. BUY ENGINE (Improved)
+# 1. BUY ENGINE
 # ==========================================
 @router.post("/buy")
 def buy_stock(
@@ -227,26 +59,14 @@ def buy_stock(
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    # Fetch live market data
-    try:
-        stock = yf.Ticker(ticker)
-        data = stock.history(period="1d")
-        if data.empty:
-            raise HTTPException(status_code=400, detail=f"Invalid ticker symbol: {ticker}")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Market data unavailable for {ticker}: {str(e)}")
+    quote = provider.get_quote(ticker)
+    if quote is None:
+        raise HTTPException(status_code=400, detail=f"Market data unavailable for {ticker}")
 
-    # Detect currency/nation and get enriched info
-    info = enrich_stock_info(ticker)
-    currency = info.get("currency", "USD")
-    country = info.get("country", "US")
+    current_price_native = quote.price / YFinanceProvider.get_exchange_rate(quote.currency, "USD")
+    current_price_usd = quote.price
+    rate_used = YFinanceProvider.get_exchange_rate(quote.currency, "USD")
 
-    # Prices
-    current_price_native = float(data["Close"].iloc[-1])
-    current_price_usd = convert_to_usd(current_price_native, currency)
-    rate_used = get_exchange_rate(currency, "USD")
-
-    # Cost calculation
     total_cost_usd = current_price_usd * quantity
     if user.balance < total_cost_usd:
         raise HTTPException(
@@ -254,10 +74,8 @@ def buy_stock(
             detail=f"Insufficient funds. Cost: ${round(total_cost_usd, 2)}, Balance: ${round(user.balance, 2)}"
         )
 
-    # Deduct balance
     user.balance -= total_cost_usd
 
-    # Portfolio update
     portfolio_item = db.query(Portfolio).filter(
         Portfolio.user_id == user_big_id,
         Portfolio.ticker == ticker
@@ -270,37 +88,41 @@ def buy_stock(
         portfolio_item.shares_owned = new_total_shares
         portfolio_item.total_cost_basis_usd = new_total_cost_usd
 
-        # Weighted average original price
-        old_orig_cost = portfolio_item.original_avg_buy_price * (new_total_shares - quantity)
+        old_orig_cost = (portfolio_item.original_avg_buy_price or 0.0) * (new_total_shares - quantity)
         new_orig_cost = current_price_native * quantity
         portfolio_item.original_avg_buy_price = (old_orig_cost + new_orig_cost) / new_total_shares
         portfolio_item.last_exchange_rate = rate_used
-        portfolio_item.exchange = info.get("exchange", "Unknown")
+        portfolio_item.exchange = quote.exchange
+        portfolio_item.currency = quote.currency
+        portfolio_item.country = quote.country
+        portfolio_item.sector = quote.sector
+        portfolio_item.industry = quote.industry
     else:
         new_holding = Portfolio(
             user_id=user_big_id,
             ticker=ticker,
             shares_owned=quantity,
             average_buy_price=current_price_usd,
-            currency=currency,
-            country=country,
-            exchange=info.get("exchange", "Unknown"),
+            currency=quote.currency,
+            country=quote.country,
+            exchange=quote.exchange,
             original_avg_buy_price=current_price_native,
             last_exchange_rate=rate_used,
             total_cost_basis_usd=total_cost_usd,
+            sector=quote.sector,
+            industry=quote.industry,
         )
         db.add(new_holding)
 
-    # Transaction history
     history_log = TransactionHistory(
         user_id=user_big_id,
         ticker=ticker,
         action="BUY",
         shares=quantity,
         price_per_share=current_price_usd,
-        currency=currency,
-        country=country,
-        exchange=info.get("exchange", "Unknown"),
+        currency=quote.currency,
+        country=quote.country,
+        exchange=quote.exchange,
         original_price_per_share=current_price_native,
         exchange_rate_used=rate_used,
         total_value_usd=total_cost_usd,
@@ -311,15 +133,15 @@ def buy_stock(
     return {
         "message": f"Successfully bought {quantity} shares of {ticker}!",
         "new_balance": round(user.balance, 2),
-        "currency": currency,
-        "country": country,
+        "currency": quote.currency,
+        "country": quote.country,
         "price_usd": round(current_price_usd, 2),
         "price_native": round(current_price_native, 2),
     }
 
 
 # ==========================================
-# 2. SELL ENGINE (Improved)
+# 2. SELL ENGINE
 # ==========================================
 @router.post("/sell")
 def sell_stock(
@@ -352,31 +174,18 @@ def sell_stock(
             detail=f"You don't own enough shares of {ticker}. Trying to sell: {quantity}, You own: {round(current_holdings, 4)}"
         )
 
-    # Fetch current market price
-    try:
-        stock = yf.Ticker(ticker)
-        data = stock.history(period="1d")
-        if data.empty:
-            raise HTTPException(status_code=400, detail="Error fetching market price.")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Market data unavailable for {ticker}: {str(e)}")
+    quote = provider.get_quote(ticker)
+    if quote is None:
+        raise HTTPException(status_code=400, detail=f"Market data unavailable for {ticker}")
 
-    info = enrich_stock_info(ticker)
-    currency = info.get("currency", "USD")
-    country = info.get("country", "US")
-
-    current_price_native = float(data["Close"].iloc[-1])
-    current_price_usd = convert_to_usd(current_price_native, currency)
-    rate_used = get_exchange_rate(currency, "USD")
+    current_price_native = quote.price / YFinanceProvider.get_exchange_rate(quote.currency, "USD")
+    current_price_usd = quote.price
+    rate_used = YFinanceProvider.get_exchange_rate(quote.currency, "USD")
 
     total_revenue_usd = current_price_usd * quantity
-
-    # Credit user
     user.balance += total_revenue_usd
 
-    # Update portfolio
     portfolio_item.shares_owned -= quantity
-    # Proportionally reduce cost basis to keep avg buy price stable on partial sells
     if portfolio_item.shares_owned > 0:
         sold_ratio = quantity / (portfolio_item.shares_owned + quantity)
         portfolio_item.total_cost_basis_usd -= portfolio_item.total_cost_basis_usd * sold_ratio
@@ -385,20 +194,18 @@ def sell_stock(
         portfolio_item.total_cost_basis_usd = 0.0
         portfolio_item.average_buy_price = 0.0
 
-    # Cleanup if effectively empty (float tolerance)
     if portfolio_item.shares_owned <= 0.0001:
         db.delete(portfolio_item)
 
-    # Transaction history
     history_log = TransactionHistory(
         user_id=user_big_id,
         ticker=ticker,
         action="SELL",
         shares=quantity,
         price_per_share=current_price_usd,
-        currency=currency,
-        country=country,
-        exchange=info.get("exchange", "Unknown"),
+        currency=quote.currency,
+        country=quote.country,
+        exchange=quote.exchange,
         original_price_per_share=current_price_native,
         exchange_rate_used=rate_used,
         total_value_usd=total_revenue_usd,
@@ -409,8 +216,8 @@ def sell_stock(
     return {
         "message": f"Successfully sold {quantity} shares of {ticker}!",
         "new_balance": round(user.balance, 2),
-        "currency": currency,
-        "country": country,
+        "currency": quote.currency,
+        "country": quote.country,
         "price_usd": round(current_price_usd, 2),
         "price_native": round(current_price_native, 2),
     }
@@ -440,6 +247,8 @@ def get_user_portfolio(user_id: str, db: Session = Depends(get_db)):
             "last_exchange_rate": item.last_exchange_rate or 1.0,
             "total_cost_basis_usd": item.total_cost_basis_usd or (item.shares_owned * item.average_buy_price),
             "exchange": item.exchange or "Unknown",
+            "sector": item.sector,
+            "industry": item.industry,
         })
     return result
 
@@ -492,141 +301,46 @@ WATCHLIST = {
 
 
 @router.get("/market")
-@cached(cache=market_cache)
 def get_real_market_data():
     """Returns live prices for the default global watchlist."""
     market_data = []
-    tickers_string = " ".join(WATCHLIST.keys())
-
-    try:
-        yf_tickers = yf.Tickers(tickers_string)
-    except Exception as e:
-        print(f"Tickers init failed: {e}")
-        yf_tickers = None
-
     for ticker_symbol, ui_data in WATCHLIST.items():
         try:
-            if yf_tickers and ticker_symbol in yf_tickers.tickers:
-                ticker_obj = yf_tickers.tickers[ticker_symbol]
-            else:
-                ticker_obj = yf.Ticker(ticker_symbol)
-
-            fast_info = ticker_obj.fast_info
-            current_price = fast_info.last_price
-            prev_close = fast_info.previous_close
-
-            info = enrich_stock_info(ticker_symbol)
-            currency = info.get("currency", "USD")
-            country = info.get("country", ui_data.get("country", "US"))
-
-            current_price_usd = convert_to_usd(current_price, currency)
-            prev_close_usd = convert_to_usd(prev_close, currency) if prev_close else None
-
-            if prev_close_usd and prev_close_usd > 0:
-                change_pct = ((current_price_usd - prev_close_usd) / prev_close_usd) * 100
-                change_str = f"+{change_pct:.2f}%" if change_pct >= 0 else f"{change_pct:.2f}%"
-            else:
-                change_str = "0.00%"
-
-            market_data.append({
-                "ticker": ticker_symbol,
-                "name": ui_data["name"],
-                "price": round(current_price_usd, 2),
-                "icon": ui_data["icon"],
-                "category": ui_data["category"],
-                "change": change_str,
-                "currency": currency,
-                "country": country,
-                "flag": COUNTRY_FLAGS.get(country, "🌍"),
-                "exchange": info.get("exchange", "Unknown"),
-            })
+            quote = provider.get_quote(ticker_symbol)
+            if quote is None:
+                continue
+            market_data.append(_quote_to_market_row(quote, ui_data))
         except Exception as e:
-            print(f"Failed to fetch {ticker_symbol}: {e}")
-
+            logger.warning(f"Failed to fetch {ticker_symbol}: {e}")
     return market_data
 
 
 # ==========================================
 # 5. SEARCH ENGINE
 # ==========================================
-
-def fetch_price_data(quote):
-    ticker_symbol = quote.get("symbol")
-    if not ticker_symbol:
-        return None
-
-    if ticker_symbol in price_cache:
-        return price_cache[ticker_symbol]
-
-    try:
-        info = enrich_stock_info(ticker_symbol)
-        currency = info.get("currency", "USD")
-        country = info.get("country", "US")
-
-        ticker_obj = yf.Ticker(ticker_symbol)
-        fast_info = ticker_obj.fast_info
-
-        current_price = getattr(fast_info, "last_price", None)
-        prev_close = getattr(fast_info, "previous_close", None)
-
-        if not current_price:
-            return None
-
-        current_price_usd = convert_to_usd(current_price, currency)
-        prev_close_usd = convert_to_usd(prev_close, currency) if prev_close else None
-
-        change_str = "0.00%"
-        if prev_close_usd and prev_close_usd > 0:
-            change_pct = ((current_price_usd - prev_close_usd) / prev_close_usd) * 100
-            change_str = f"+{change_pct:.2f}%" if change_pct >= 0 else f"{change_pct:.2f}%"
-
-        exchange = quote.get("exchange", "Unknown")
-        qtype = quote.get("quoteType", "Stock")
-
-        result = {
-            "ticker": ticker_symbol,
-            "name": quote.get("shortname") or quote.get("longname") or ticker_symbol,
-            "price": round(current_price_usd, 2),
-            "exchange": exchange,
-            "type": qtype,
-            "icon": COUNTRY_FLAGS.get(country, "🌍"),
-            "category": exchange,
-            "change": change_str,
-            "currency": currency,
-            "country": country,
-            "flag": COUNTRY_FLAGS.get(country, "🌍"),
-        }
-        price_cache[ticker_symbol] = result
-        return result
-    except Exception as e:
-        print(f"Skipping {ticker_symbol}: {e}")
-        return None
-
-
 @router.get("/search")
-@cached(cache=query_cache)
 def search_global_stocks(query: str = Query(..., min_length=1)):
-    """Searches Yahoo Finance with caching and parallel processing."""
+    """Searches Yahoo Finance with caching."""
     try:
-        search_url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}&quotesCount=8"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(search_url, headers=headers, timeout=5)
-
-        if response.status_code != 200:
-            return []
-
-        quotes = [q for q in response.json().get("quotes", []) if q.get("quoteType") in ["EQUITY", "ETF"]]
-        live_results = []
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
-            results = executor.map(fetch_price_data, quotes)
-            for res in results:
-                if res:
-                    live_results.append(res)
-
-        return live_results
+        results = provider.search(query, limit=8)
+        return [
+            {
+                "ticker": r.ticker,
+                "name": r.name,
+                "price": round(r.price, 2),
+                "exchange": r.exchange,
+                "type": r.type,
+                "icon": r.flag,
+                "category": r.sector or r.exchange,
+                "change": _format_change(r.change_pct),
+                "currency": r.currency,
+                "country": r.country,
+                "flag": r.flag,
+            }
+            for r in results
+        ]
     except Exception as e:
-        print(f"Search failed for '{query}': {e}")
+        logger.warning(f"Search failed for '{query}': {e}")
         return []
 
 
@@ -646,41 +360,25 @@ def get_portfolio_live_prices(user_id: str, db: Session = Depends(get_db)):
         return []
 
     portfolio_prices = []
-    tickers = [item.ticker for item in portfolio_items]
-
     for item in portfolio_items:
         try:
-            ticker_obj = yf.Ticker(item.ticker)
-            fast_info = ticker_obj.fast_info
-            current_price = fast_info.last_price
-            prev_close = fast_info.previous_close
-
-            info = enrich_stock_info(item.ticker)
-            currency = info.get("currency", item.currency or "USD")
-            country = info.get("country", item.country or "US")
-
-            current_price_usd = convert_to_usd(current_price, currency)
-            prev_close_usd = convert_to_usd(prev_close, currency) if prev_close else None
-
-            if prev_close_usd and prev_close_usd > 0:
-                change_pct = ((current_price_usd - prev_close_usd) / prev_close_usd) * 100
-                change_str = f"+{change_pct:.2f}%" if change_pct >= 0 else f"{change_pct:.2f}%"
-            else:
-                change_str = "0.00%"
+            quote = provider.get_quote(item.ticker)
+            if quote is None:
+                raise ValueError("No quote")
 
             portfolio_prices.append({
                 "ticker": item.ticker,
-                "price": round(current_price_usd, 2),
-                "change": change_str,
+                "price": round(quote.price, 2),
+                "change": _format_change(quote.change_pct),
                 "shares_owned": item.shares_owned,
                 "average_buy_price": round(item.average_buy_price, 2),
-                "currency": currency,
-                "country": country,
-                "flag": COUNTRY_FLAGS.get(country, "🌍"),
-                "exchange": info.get("exchange", "Unknown"),
+                "currency": quote.currency,
+                "country": quote.country,
+                "flag": quote.flag,
+                "exchange": quote.exchange,
             })
         except Exception as e:
-            print(f"Failed to fetch price for {item.ticker}: {e}")
+            logger.warning(f"Failed to fetch price for {item.ticker}: {e}")
             portfolio_prices.append({
                 "ticker": item.ticker,
                 "price": round(item.average_buy_price, 2),
@@ -702,33 +400,21 @@ def get_portfolio_live_prices(user_id: str, db: Session = Depends(get_db)):
 @router.get("/price/{ticker}")
 def get_single_price(ticker: str):
     """Quick endpoint for a single ticker's live USD price and metadata."""
-    try:
-        t = yf.Ticker(ticker.upper())
-        data = t.history(period="1d")
-        if data.empty:
-            raise HTTPException(status_code=404, detail="Ticker not found or no data.")
+    quote = provider.get_quote(ticker)
+    if quote is None:
+        raise HTTPException(status_code=404, detail="Ticker not found or no data.")
 
-        info = enrich_stock_info(ticker)
-        currency = info.get("currency", "USD")
-        country = info.get("country", "US")
-
-        native = float(data["Close"].iloc[-1])
-        usd = convert_to_usd(native, currency)
-
-        return {
-            "ticker": ticker.upper(),
-            "price_native": round(native, 4),
-            "price_usd": round(usd, 4),
-            "currency": currency,
-            "country": country,
-            "flag": COUNTRY_FLAGS.get(country, "🌍"),
-            "name": info.get("name", ticker.upper()),
-            "exchange": info.get("exchange", "Unknown"),
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    native = quote.price / YFinanceProvider.get_exchange_rate(quote.currency, "USD") if quote.currency != "USD" else quote.price
+    return {
+        "ticker": quote.ticker,
+        "price_native": round(native, 4),
+        "price_usd": round(quote.price, 4),
+        "currency": quote.currency,
+        "country": quote.country,
+        "flag": quote.flag,
+        "name": quote.name,
+        "exchange": quote.exchange,
+    }
 
 
 # ==========================================
@@ -738,12 +424,8 @@ def get_single_price(ticker: str):
 def get_stock_metrics(ticker: str):
     """Returns key financial metrics for a ticker."""
     try:
-        info = enrich_stock_info(ticker)
-        t = yf.Ticker(ticker.upper())
-        data = t.history(period="1d")
-        current_price = None
-        if not data.empty:
-            current_price = float(data["Close"].iloc[-1])
+        info = provider.enrich_info(ticker)
+        quote = provider.get_quote(ticker)
 
         def fmt(val, div=1):
             if val is None:
@@ -757,8 +439,10 @@ def get_stock_metrics(ticker: str):
                 if abs(v) >= 1_000:
                     return f"{v/1_000:.2f}K"
                 return f"{v:.2f}"
-            except:
+            except Exception:
                 return None
+
+        current_price = quote.price if quote else None
 
         metrics = {
             "ticker": ticker.upper(),
@@ -767,10 +451,10 @@ def get_stock_metrics(ticker: str):
             "country": info.get("country", "US"),
             "flag": info.get("flag", "🌍"),
             "exchange": info.get("exchange", "Unknown"),
-            "sector": info.get("sector", "Unknown"),
+            "sector": info.get("sector") or "Unknown",
             "industry": info.get("industry"),
-            "price_native": round(current_price, 2) if current_price else None,
-            "price_usd": round(convert_to_usd(current_price, info.get("currency", "USD")), 2) if current_price else None,
+            "price_native": round(current_price / YFinanceProvider.get_exchange_rate(info.get("currency", "USD"), "USD"), 2) if current_price else None,
+            "price_usd": round(current_price, 2) if current_price else None,
             "market_cap": fmt(info.get("market_cap")),
             "market_cap_raw": info.get("market_cap"),
             "pe_trailing": round(info["pe_trailing"], 2) if info.get("pe_trailing") else None,
@@ -795,64 +479,12 @@ def get_stock_metrics(ticker: str):
 # 8. STOCK HISTORY SPARKLINE
 # ==========================================
 @router.get("/history-data/{ticker}")
-def get_stock_history(ticker: str, period: str = Query("1mo", pattern="^(1d|5d|1mo|3mo|6mo|1y)$")):
+def get_stock_history(ticker: str, period: str = Query("1mo", pattern="^(1d|5d|1mo|3mo|6mo|1y|2y|5y)$")):
     """Returns historical closing prices for sparkline/chart rendering."""
-    try:
-        t = yf.Ticker(ticker.upper())
-        hist = t.history(period=period)
-        if hist.empty:
-            raise HTTPException(status_code=404, detail="No historical data.")
-
-        info = enrich_stock_info(ticker)
-        currency = info.get("currency", "USD")
-
-        closes = hist["Close"].tolist()
-        dates = hist.index.strftime("%Y-%m-%d").tolist()
-
-        return {
-            "ticker": ticker.upper(),
-            "currency": currency,
-            "country": info.get("country", "US"),
-            "flag": COUNTRY_FLAGS.get(info.get("country", "US"), "🌍"),
-            "exchange": info.get("exchange", "Unknown"),
-            "dates": dates,
-            "prices_native": [round(p, 2) for p in closes],
-            "prices_usd": [round(convert_to_usd(p, currency), 2) for p in closes],
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-# ==========================================
-# 9. NEWS FEED
-# ==========================================
-@router.get("/news")
-def get_market_news(category: str = Query("general", pattern="^(general|forex|crypto|merger)$")):
-    """Proxy Finnhub market news to avoid exposing API key on frontend."""
-    if not FINNHUB_API_KEY:
-        return []
-    try:
-        url = "https://finnhub.io/api/v1/news"
-        params = {"category": category, "token": FINNHUB_API_KEY}
-        resp = requests.get(url, params=params, timeout=8)
-        if resp.status_code == 200:
-            data = resp.json()
-            # Trim to essentials
-            trimmed = []
-            for item in data[:15]:
-                trimmed.append({
-                    "headline": item.get("headline", ""),
-                    "source": item.get("source", ""),
-                    "summary": item.get("summary", ""),
-                    "url": item.get("url", ""),
-                    "image": item.get("image", ""),
-                    "datetime": item.get("datetime"),
-                    "category": item.get("category", ""),
-                })
-            return trimmed
-        return []
-    except Exception as e:
-        print(f"News fetch failed: {e}")
-        return []
+    result = provider.get_history(ticker, period)
+    if result is None:
+        raise HTTPException(status_code=404, detail="No historical data.")
+    # Round for smaller payload
+    result["prices_native"] = [round(p, 2) for p in result["prices_native"]]
+    result["prices_usd"] = [round(p, 2) for p in result["prices_usd"]]
+    return result

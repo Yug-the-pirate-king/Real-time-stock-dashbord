@@ -8,6 +8,7 @@ annotated-types==0.7.0
 
 # Data & Finance - Letting pip pick the best pre-compiled wheels for Linux
 numpy>=1.24.0
+scipy>=1.10.0
 pandas>=2.0.0
 yfinance>=1.3.0
 SQLAlchemy==2.0.49
@@ -47,4 +48,10 @@ typing_extensions
 tzdata
 
 python-dotenv
+pydantic-settings
+
+# Testing
+pytest
+httpx
+
 psycopg2-binary

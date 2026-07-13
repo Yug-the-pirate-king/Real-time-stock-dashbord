@@ -145,7 +145,34 @@ cd stock_-Simulator_-Predictor
 
 ### Step 2: Start everything
 ```bash
-docker compose up --build
+Uncaught runtime errors:
+×
+ERROR
+Failed to fetch
+TypeError: Failed to fetch
+    at seedAndLoad (http://localhost:3000/static/js/bundle.js:2373:13)
+    at http://localhost:3000/static/js/bundle.js:2368:5
+    at Object.react_stack_bottom_frame (http://localhost:3000/static/js/bundle.js:39019:18)
+    at runWithFiberInDEV (http://localhost:3000/static/js/bundle.js:26306:68)
+    at commitHookEffectListMount (http://localhost:3000/static/js/bundle.js:32310:157)
+    at commitHookPassiveMountEffects (http://localhost:3000/static/js/bundle.js:32347:56)
+    at commitPassiveMountOnFiber (http://localhost:3000/static/js/bundle.js:33361:25)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3000/static/js/bundle.js:33344:7)
+    at commitPassiveMountOnFiber (http://localhost:3000/static/js/bundle.js:33418:9)
+    at recursivelyTraversePassiveMountEffects (http://localhost:3000/static/js/bundle.js:33344:7)
+ERROR
+Failed to fetch
+TypeError: Failed to fetch
+    at seedAndLoad (http://localhost:3000/static/js/bundle.js:2373:13)
+    at http://localhost:3000/static/js/bundle.js:2368:5
+    at Object.react_stack_bottom_frame (http://localhost:3000/static/js/bundle.js:39019:18)
+    at runWithFiberInDEV (http://localhost:3000/static/js/bundle.js:26306:68)
+    at commitHookEffectListMount (http://localhost:3000/static/js/bundle.js:32310:157)
+    at commitHookPassiveMountEffects (http://localhost:3000/static/js/bundle.js:32347:56)
+    at reconnectPassiveEffects (http://localhost:3000/static/js/bundle.js:33451:9)
+    at doubleInvokeEffectsOnFiber (http://localhost:3000/static/js/bundle.js:34733:127)
+    at runWithFiberInDEV (http://localhost:3000/static/js/bundle.js:26306:68)
+    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://localhost:3000/static/js/bundle.js:34726:72)
 ```
 
 > **First run** will build both containers. Subsequent runs are instant.

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Float, DateTime, ForeignKey, BigInteger
 from datetime import datetime
-from database import Base
+from core.db import Base
 
 class Portfolio(Base):
     __tablename__ = "portfolios"
@@ -18,11 +18,13 @@ class Portfolio(Base):
     country = Column(String, default="US")
 
     # For precise multi-currency P&L tracking
-    original_avg_buy_price = Column(Float, default=0.0)
-    last_exchange_rate = Column(Float, default=1.0)
+    original_avg_buy_price = Column(Float, default=0.0, nullable=False)
+    last_exchange_rate = Column(Float, default=1.0, nullable=False)
 
     total_cost_basis_usd = Column(Float, default=0.0)
     exchange = Column(String, default="Unknown")
+    sector = Column(String, default="")
+    industry = Column(String, default="")
 
 class TransactionHistory(Base):
     __tablename__ = "transaction_history"

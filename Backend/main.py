@@ -1,28 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import init_db
+from core.config import get_settings
+from core.db import init_db
+
+settings = get_settings()
 
 # Import your routers FIRST (this loads your new models into memory)
-from routers import auth, trading, finance_monitor
+from routers import auth, trading, finance_monitor, options
 
 # Initialize DB + run any lightweight migrations
 init_db()
 
-app = FastAPI(title="Scalable Stock Simulator Engine")
-
-# Explicitly list the URLs allowed to talk to your backend API
-origins = [
-    "https://stock-simulator-predictor.vercel.app",         # Your main live frontend
-    "https://stock-simulator-predictor-ipx1c0929.vercel.app", # The specific Vercel preview deployment
-    "http://localhost:3000",                                 # Local development fallback
-    "http://127.0.0.1:3000",
-    "http://localhost",                                      # Docker nginx frontend
-    "http://127.0.0.1",
-]
+app = FastAPI(title=settings.app_name)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,6 +25,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(trading.router)
 app.include_router(finance_monitor.router)
+app.include_router(options.router)
 
 @app.get("/")
 def home():
