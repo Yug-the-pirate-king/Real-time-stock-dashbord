@@ -4,14 +4,17 @@ import Login from './pages/Login';
 import TradingDesk from './pages/TradingDesk';
 import NewsFeed from './pages/NewsFeed';
 import AiModel from './pages/Ai_model';
+import OptionsLab from './pages/OptionsLab';
 import './styles/global.css';
 import { GoSidebarExpand, GoSidebarCollapse } from "react-icons/go";
 import { AiOutlineStock } from "react-icons/ai";
 import { FaBrain } from "react-icons/fa";
 import { FaRegNewspaper } from "react-icons/fa";
+import { FaFlask } from "react-icons/fa";
 
 const VIEWS = [
   { id: 'trading-desk', label: 'Trading Desk', icon: AiOutlineStock },
+  { id: 'options-lab',  label: 'Options Lab',  icon: FaFlask },
   { id: 'news-feed',    label: 'Finance Monitor',    icon: FaRegNewspaper },
   { id: 'ai-model',     label: 'AI Signals',   icon: FaBrain },
 ];
@@ -64,10 +67,10 @@ export default function App() {
 
       <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-content-wrapper">
-          <a className="sidebar-logo" href="#" onClick={(e) => e.preventDefault()}>
+          <span className="sidebar-logo">
             <span className="logo-dot" />
             StockPulse
-          </a>
+          </span>
 
           <span className="nav-section-label">Workspace</span>
 
@@ -126,6 +129,7 @@ export default function App() {
 
         <main className="view-content">
           {view === 'trading-desk' && <TradingDesk user={user} setUser={setUser} />}
+          {view === 'options-lab'  && <OptionsLab  user={user} />}
           {view === 'news-feed'    && <NewsFeed    user={user} />}
           {view === 'ai-model'     && <AiModel     user={user} />}
         </main>

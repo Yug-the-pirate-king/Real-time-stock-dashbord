@@ -1,0 +1,361 @@
+INFO:     Will watch for changes in these directories: ['C:\\Users\\meena shah\\Desktop\\stock_-Simulator_-Predictor\\Backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [49132] using StatReload
+INFO:     Started server process [25316]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:58539 - "GET /options/brokers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61665 - "GET /options/brokers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61668 - "POST /trade/buy?user_id=2&ticker=AAPL&quantity=1 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\uvicorn\protocols\http\h11_impl.py", line 415, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 56, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 330, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2518, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1002, in run
+    result = context.run(func, *args)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\routers\trading.py", line 91, in buy_stock
+    old_orig_cost = portfolio_item.original_avg_buy_price * (new_total_shares - quantity)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for *: 'NoneType' and 'float'
+INFO:     127.0.0.1:61678 - "POST /trade/buy?user_id=2&ticker=AAPL&quantity=1 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\uvicorn\protocols\http\h11_impl.py", line 415, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 56, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 330, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2518, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1002, in run
+    result = context.run(func, *args)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\routers\trading.py", line 91, in buy_stock
+    old_orig_cost = portfolio_item.original_avg_buy_price * (new_total_shares - quantity)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for *: 'NoneType' and 'float'
+INFO:     127.0.0.1:62868 - "GET /trade/history/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62899 - "GET /trade/portfolio/2 HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'routers\trading.py'. Reloading...
+ INFO:     127.0.0.1:55247 - "POST /trade/buy?user_id=2&ticker=AAPL&quantity=1 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\uvicorn\protocols\http\h11_impl.py", line 415, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 56, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 330, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2518, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1002, in run
+    result = context.run(func, *args)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\routers\trading.py", line 91, in buy_stock
+    old_orig_cost = (portfolio_item.original_avg_buy_price or 0.0) * (new_total_shares - quantity)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported operand type(s) for *: 'NoneType' and 'float'
+INFO:     127.0.0.1:55236 - "GET /trade/portfolio-prices/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61426 - "POST /trade/buy?user_id=2&ticker=AAPL&quantity=1 HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\uvicorn\protocols\http\h11_impl.py", line 415, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 56, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\applications.py", line 1159, in __call__
+    await super().__call__(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\applications.py", line 90, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 680, in app
+    await route.handle(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 134, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 120, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 674, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\fastapi\routing.py", line 330, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\starlette\concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2518, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1002, in run
+    result = context.run(func, *args)
+  File "C:\Users\meena shah\Desktop\stock_-Simulator_-Predictor\Backend\routers\trading.py", line 91, in buy_stock
+    old_orig_cost = (portfolio_item.original_avg_buy_price or 0.0) * (new_total_shares - quantity)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported operand type(s) for *: 'NoneType' and 'float'
+INFO:     127.0.0.1:53771 - "GET /trade/portfolio/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52480 - "GET /trade/history/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55169 - "POST /trade/buy?user_id=2&ticker=AAPL&quantity=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61493 - "GET /trade/portfolio-prices/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65000 - "POST /trade/buy?user_id=2&ticker=GOOG&quantity=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65000 - "GET /trade/portfolio/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56475 - "GET /trade/history/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62043 - "GET /trade/metrics/GOOG HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63242 - "GET /trade/price/GOOG HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65429 - "GET /trade/portfolio-prices/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60079 - "GET /trade/history-data/GOOG?period=1mo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58178 - "GET /trade/portfolio/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64306 - "GET /trade/portfolio-prices/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63505 - "GET /trade/history/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54791 - "GET /trade/history-data/GOOG?period=1mo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51087 - "GET /trade/price/GOOG HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63594 - "GET /trade/metrics/GOOG HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63594 - "POST /trade/sell?user_id=2&ticker=GOOG&quantity=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63594 - "GET /trade/portfolio/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49281 - "GET /trade/price/GOOG HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55184 - "GET /trade/history-data/GOOG?period=1mo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65414 - "GET /trade/metrics/GOOG HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51087 - "GET /trade/history/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58028 - "GET /trade/portfolio-prices/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64651 - "GET /trade/portfolio-prices/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56761 - "GET /trade/portfolio/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54832 - "GET /trade/history/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50304 - "GET /trade/price/AAPL HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54199 - "GET /trade/metrics/AAPL HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64612 - "GET /trade/history-data/AAPL?period=1mo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52674 - "GET /trade/search?query=a HTTP/1.1" 200 OK
+$AAPL.SW: possibly delisted; no price data found  (period=1d)
+$AAPL.SW: possibly delisted; no price data found  (period=1d)
+INFO:     127.0.0.1:61597 - "GET /trade/search?query=aaple HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60757 - "GET /trade/search?query=aa HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53857 - "GET /trade/search?query=aap HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50287 - "GET /trade/history/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53857 - "GET /trade/portfolio/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52674 - "GET /trade/search?query=aapl HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60395 - "GET /trade/portfolio-prices/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60395 - "POST /trade/buy?user_id=2&ticker=AAPL&quantity=15 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60395 - "GET /trade/portfolio/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53857 - "GET /trade/portfolio-prices/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52674 - "GET /trade/history/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58481 - "GET /trade/metrics/AAPL HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54821 - "GET /trade/price/AAPL HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53711 - "GET /trade/history-data/AAPL?period=1mo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54411 - "GET /trade/portfolio/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62336 - "GET /trade/history/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57928 - "GET /trade/portfolio-prices/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50961 - "GET /trade/portfolio/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61844 - "GET /trade/history/2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55720 - "GET /trade/portfolio-prices/2 HTTP/1.1" 200 OK
