@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Float, BigInteger
-from database import Base
+from core.db import Base
 import bcrypt
 
 class User(Base):

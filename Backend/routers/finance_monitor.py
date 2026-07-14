@@ -3,15 +3,16 @@ from cachetools import TTLCache
 import requests
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
-import yfinance as yf
 from typing import List, Dict, Any
 import concurrent.futures
 from datetime import datetime
 import os
 
 from data.finance_geo import STOCK_EXCHANGES, CENTRAL_BANKS, FEEDS
+from services.market_data import get_provider
 
 router = APIRouter(prefix="/finance", tags=["Finance Monitor"])
+provider = get_provider()
 
 rss_cache = TTLCache(maxsize=200, ttl=600)
 brief_cache = TTLCache(maxsize=1, ttl=300)
@@ -199,15 +200,15 @@ def get_daily_brief():
 
     for ticker in BRIEF_TICKERS:
         try:
-            t = yf.Ticker(ticker)
-            fast = t.fast_info
-            price = fast.last_price
-            prev = fast.previous_close
-            change_pct = ((price - prev) / prev) * 100 if prev else 0.0
+            quote = provider.get_quote(ticker)
+            if quote is None or quote.change_pct is None:
+                continue
+            change_pct = quote.change_pct
+            prev = quote.price / (1 + change_pct / 100) if change_pct is not None else None
             items.append(
                 {
                     "ticker": ticker,
-                    "price": round(price, 2),
+                    "price": round(quote.price, 2),
                     "change_pct": round(change_pct, 2),
                     "prev_close": round(prev, 2) if prev else None,
                 }
@@ -306,22 +307,19 @@ def get_breaking_alerts(threshold: float = Query(2.5)):
     alerts = []
     for ticker in ALERT_TICKERS:
         try:
-            t = yf.Ticker(ticker)
-            fast = t.fast_info
-            price = fast.last_price
-            prev = fast.previous_close
-            if not prev:
+            quote = provider.get_quote(ticker)
+            if quote is None or quote.change_pct is None:
                 continue
-            change_pct = ((price - prev) / prev) * 100
+            change_pct = quote.change_pct
             if abs(change_pct) >= threshold:
                 severity = "critical" if abs(change_pct) >= 5.0 else "warning"
                 alerts.append(
                     {
                         "ticker": ticker,
-                        "price": round(price, 2),
+                        "price": round(quote.price, 2),
                         "change_pct": round(change_pct, 2),
                         "severity": severity,
-                        "message": f"{ticker} is {'up' if change_pct > 0 else 'down'} {abs(change_pct):.2f}% at ${round(price, 2)}",
+                        "message": f"{ticker} is {'up' if change_pct > 0 else 'down'} {abs(change_pct):.2f}% at ${round(quote.price, 2)}",
                     }
                 )
         except Exception:
