@@ -1,0 +1,61 @@
+# ── Claude Code session/worktree files ──────────────────────
+.claude/
+CLAUDE.md
+
+# ── Nested projects not meant for this repo ─────────────────
+FinceptTerminal/
+
+# ── Python virtual environments ─────────────────────────────
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# ── Node / frontend build artifacts ───────────────────────────
+node_modules/
+dist/
+build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── IDE / editor files ────────────────────────────────────────
+.idea/
+.vscode/
+*.suo
+*.user
+*.sw?
+.DS_Store
+Thumbs.db
+
+# ── Environment & secrets ────────────────────────────────────
+.env
+.env.*
+*.key
+*.pub
+
+# ── Databases & caches ────────────────────────────────────────
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+.cache/
+.pytest_cache/
+.coverage
+
+# ── Local data / ML artifacts ─────────────────────────────────
+*.csv
+*.bin
+*.pt
+*.onnx
+*.h5
+*.pkl
+*.pickle
+*.model
+*.weights
