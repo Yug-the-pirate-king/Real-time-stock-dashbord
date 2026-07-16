@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     exchange_rate_api_key: str = ""
 
     # CORS origins — comma-separated list of allowed frontend URLs
-    cors_origins: str = "http://localhost,http://localhost:3000,http://127.0.0.1:3000"
+    cors_origins: str = "http://localhost,http://localhost:3000,http://127.0.0.1:3000,https://stock-simulator-predictor.vercel.app"
 
     # Cache TTLs (seconds)
     price_cache_ttl: int = 30
